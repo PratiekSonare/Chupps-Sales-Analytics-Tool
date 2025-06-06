@@ -15,7 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 class ForecastRequest(BaseModel):
     data: list  # List of { ds: date, y: value }
 
@@ -25,10 +24,10 @@ def forecast(req: ForecastRequest):
 
     # load df
     df = pd.DataFrame(req.data)
+    df['ds'] = pd.to_datetime(df['ds'], format="%Y-%m-%d")
 
     # define model
-    years = range(prophet_df['ds'].dt.year.min(),
-                  prophet_df['ds'].dt.year.max() + 3)
+    years = range(df['ds'].dt.year.min(), df['ds'].dt.year.max() + 3)
     
     feb_mar_spike = pd.DataFrame({
         'holiday': 'feb_mar_spike',
@@ -45,7 +44,7 @@ def forecast(req: ForecastRequest):
         holidays=feb_mar_spike,
         holidays_prior_scale=10
     )
-    model.fit(prophet_df)
+    model.fit(df)
 
     # make predictions
     future = model.make_future_dataframe(periods=365)

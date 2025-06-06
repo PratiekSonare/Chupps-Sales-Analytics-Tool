@@ -1,6 +1,7 @@
 <script lang="ts">
   export let data;
   const { wo_centro_prophet } = data;
+  import Tool from '../routes/Tool.svelte'
 </script>
 
 <svelte:head>
@@ -9,9 +10,9 @@
 </svelte:head>
 
 <section>
-	<h2>table 1</h2>
+	<h2>Trial Forecast</h2>
 
-	{#if wo_centro_prophet?.length}
+	<!-- {#if wo_centro_prophet?.length}
 	<table class="table-auto border border-gray-400">
 		<thead>
 		<tr>
@@ -32,8 +33,9 @@
 	</table>
 	{:else}
 	<p>No data in wo_centro_prophet.</p>
-	{/if}
+	{/if} -->
 
+	<Tool {wo_centro_prophet} />
 </section>
 
 <style>
