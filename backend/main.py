@@ -50,5 +50,5 @@ def forecast(req: ForecastRequest):
     future = model.make_future_dataframe(periods=365)
     forecast = model.predict(future)
 
-    result = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict(orient='records')
+    result = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper', 'trend']].to_dict(orient='records')
     return result
