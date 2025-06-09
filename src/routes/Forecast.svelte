@@ -67,44 +67,54 @@
       title: "Forecast",
       xaxis: { title: "Date" },
       yaxis: { title: "Value" },
-      plot_bgcolor: "rgba(0,0,0,0)", // background color inside the plotting area
-      paper_bgcolor: "rgba(0,0,0,0)",
     };
 
-    (window as any).Plotly.newPlot("forecast-plot", [trace1, trace2, trace3], layout);
+    const tableData = {
+      type: "table",
+      header: {
+        values: ["Date", "Forecast (yhat)", "Upper Bound", "Lower Bound"],
+        align: "center",
+        line: { width: 1, color: "black" },
+        fill: { color: "lightgray" },
+        font: { family: "Arial", size: 12, color: "black" },
+      },
+      cells: {
+        values: [
+          filteredForecast.map((d) => d.ds),
+          filteredForecast.map((d) => d.yhat.toFixed(2)),
+          filteredForecast.map((d) => d.yhat_upper.toFixed(2)),
+          filteredForecast.map((d) => d.yhat_lower.toFixed(2)),
+        ],
+        align: "center",
+        line: { color: "black", width: 1 },
+        font: { family: "Arial", size: 11, color: ["black"] },
+        height: 24,
+      },
+    };
+
+    (window as any).Plotly.newPlot(
+      "forecast-plot",
+      [trace1, trace2, trace3],
+      layout,
+    );
     (window as any).Plotly.newPlot("actual-plot", [trace4], layout);
+
+    (window as any).Plotly.newPlot("forecast-table", [tableData], {
+      margin: { t: 10, b: 10 },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+    });
   }
 </script>
 
-<div class="grid grid-rows-2 grid-cols-2 gap-1">
-  <!-- First row: actual plot spanning 2 columns -->
-  <div id="actual-plot" class="col-span-2 h-[400px] mt-6"></div>
-
-  <!-- Second row, first column: forecast plot -->
-  <div id="forecast-plot" class="h-[400px] mt-6"></div>
-
-  <!-- Second row, second column: scrollable table -->
-  <div class="h-[400px] overflow-y-auto border rounded">
-    <table class="min-w-full text-sm text-left">
-      <thead class="sticky top-0 bg-gray-100">
-        <tr>
-          <th class="px-3 py-2">Date</th>
-          <th class="px-3 py-2">Forecast (yhat)</th>
-          <th class="px-3 py-2">Upper Bound</th>
-          <th class="px-3 py-2">Lower Bound</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each filteredForecast as row}
-          <tr class="border-b">
-            <td class="px-3 py-2">{row.ds}</td>
-            <td class="px-3 py-2">{row.yhat.toFixed(2)}</td>
-            <td class="px-3 py-2">{row.yhat_upper.toFixed(2)}</td>
-            <td class="px-3 py-2">{row.yhat_lower.toFixed(2)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+<!-- <div class="grid grid-rows-2 grid-cols-2 gap-1 items-center"> -->
+<div class="flex flex-col gap-1 w-full items-center justify-center">
+  <div id="actual-plot" class="w-full col-span-2 h-[400px] mt-6 rounded-2xl overflow-hidden shadow-xl"></div>
+  
+  <div>
+    <div id="forecast-plot" class="w-full h-[400px] mt-6 rounded-2xl overflow-hidden shadow-xl"></div>
+    
+    <div id="forecast-table" class="w-full h-[400px]"></div>
   </div>
+  
 </div>
-

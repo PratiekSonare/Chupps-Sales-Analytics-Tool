@@ -1,7 +1,18 @@
 <script lang="ts">
-  export let data;
-  const { wo_centro_prophet } = data;
-  import Tool from '../routes/Tool.svelte'
+
+	export let data;
+	const { wo_centro_prophet } = data;
+
+	import Forecast from './Forecast.svelte'
+	import Sidebar from './sidebar/Sidebar.svelte'
+	import Home from './Home.svelte'
+	import Data from './Data.svelte'
+
+	let activeView = 'home'
+
+	function handleView(view) {
+		activeView = view;
+	}
 </script>
 
 <svelte:head>
@@ -9,37 +20,28 @@
 	<meta name="description" content="Svelte demo app" />
 </svelte:head>
 
-<section>
-	<h2>Trial Forecast</h2>
+<main class="m-0">
+	<div class="flex w-full h-full">
 
-	<!-- {#if wo_centro_prophet?.length}
-	<table class="table-auto border border-gray-400">
-		<thead>
-		<tr>
-			{#each Object.keys(wo_centro_prophet[0]) as key}
-			<th class="border px-2 py-1">{key}</th>
-			{/each}
-		</tr>
-		</thead>
-		<tbody>
-		{#each wo_centro_prophet as row}
-			<tr>
-			{#each Object.values(row) as value}
-				<td class="border px-2 py-1">{value}</td>
-			{/each}
-			</tr>
-		{/each}
-		</tbody>
-	</table>
-	{:else}
-	<p>No data in wo_centro_prophet.</p>
-	{/if} -->
+		<!-- Sidebar -->
+		<Sidebar onSelect={handleView} />
 
-	<Tool {wo_centro_prophet} />
-</section>
+		<!-- Main content -->
+		<section class="flex-1 p-6 w-full flex justify-center items-center">
+			{#if activeView === 'home'}
+				<Home />
+			{:else if activeView === 'data'}
+				<Data />
+			{:else if activeView === 'forecast'}
+				<Forecast {wo_centro_prophet} />
+			{/if}
+		</section>
+	</div>
+</main>
 
 <style>
 	@reference "tailwindcss";
+
 	section {
 		display: flex;
 		flex-direction: column;
