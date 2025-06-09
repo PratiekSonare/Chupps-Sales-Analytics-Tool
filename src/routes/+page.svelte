@@ -1,14 +1,13 @@
 <script lang="ts">
-
 	export let data;
-	const { wo_centro_prophet } = data;
+	const { wo_centro_prophet, total_sales, total_revenue, total_parties, chupps_items } = data;
 
-	import Forecast from './Forecast.svelte'
-	import Sidebar from './sidebar/Sidebar.svelte'
-	import Home from './Home.svelte'
-	import Data from './Data.svelte'
+	import Forecast from "./Forecast.svelte";
+	import Sidebar from "./sidebar/Sidebar.svelte";
+	import Home from "./Home.svelte";
+	import Data from "./Data.svelte";
 
-	let activeView = 'home'
+	let activeView = "forecast";
 
 	function handleView(view) {
 		activeView = view;
@@ -20,33 +19,31 @@
 	<meta name="description" content="Svelte demo app" />
 </svelte:head>
 
-<main class="m-0">
-	<div class="flex w-full h-full">
-
-		<!-- Sidebar -->
-		<Sidebar onSelect={handleView} />
-
-		<!-- Main content -->
-		<section class="flex-1 p-6 w-full flex justify-center items-center">
-			{#if activeView === 'home'}
-				<Home />
-			{:else if activeView === 'data'}
-				<Data />
-			{:else if activeView === 'forecast'}
-				<Forecast {wo_centro_prophet} />
-			{/if}
-		</section>
+<main class="flex w-screen h-screen overflow-hidden">
+	<!-- Sidebar -->
+	<div class="w-32 h-full bg-gray-800">
+		<Sidebar onSelect={handleView} {activeView} />
 	</div>
+
+	<!-- Main content -->
+	<section class="flex-1 flex justify-center items-center h-full overflow-auto p-6">
+		{#if activeView === "home"}
+			<Home />
+		{:else if activeView === "data"}
+			<Data />
+		{:else if activeView === "forecast"}
+			<Forecast {wo_centro_prophet} total_sales={total_sales} total_revenue={total_revenue} total_parties={total_parties} chupps_items={chupps_items} />
+		{/if}
+	</section>
 </main>
+
 
 <style>
 	@reference "tailwindcss";
-
+	
 	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		flex: 0.6;
+		margin: 0 !important;
+		padding: 0 !important;
 	}
+
 </style>

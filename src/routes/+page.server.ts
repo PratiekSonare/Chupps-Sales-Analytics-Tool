@@ -5,13 +5,25 @@ import { supabase } from '../lib/supabaseClient';
 export const load: PageServerLoad = async () => {
   // Query the table
   const { data: wo_centro_prophet, error: err1 } = await supabase.from('wo_centro_prophet').select('*');
-  if (err1) {
-    console.error('Supabase error:', err1);
-    return { wo_centro_prophet: [] }; // Return an empty array on error
+  const { data: chupps_sales, error: err2 } = await supabase.from('chupps_23_25_full').select('sales, mrp, party, item');
+  const { data: chupps_items_noSort, error: err3 } = await supabase.from('unique_items_view').select('item');
+
+  if (err1 || err2 || err3) {
+    console.error('Supabase error:', err1 || err2 || err3);
+    return { wo_centro_prophet: [], total_sales: 0 }; // Return an empty array on error
   } else {
     console.log('Data fetched successfully!');
   }
+
+  const total_sales = chupps_sales.reduce((sum, row) => sum + (row.sales ?? 0), 0);
+  const total_revenue = chupps_sales.reduce((sum, row) => sum + ((row.sales ?? 0) * (row.mrp ?? 0)), 0);
+
+  const uniqueParties = new Set(chupps_sales.map(row => row.party));
+  const total_parties = uniqueParties.size;
+  const chupps_items = chupps_items_noSort?.sort();
+
+  console.log('chupps_items: ', chupps_items)
   return {
-    wo_centro_prophet
-  };    
+    wo_centro_prophet, total_sales, total_revenue, total_parties, chupps_items
+  };
 };

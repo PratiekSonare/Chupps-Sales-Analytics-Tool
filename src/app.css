@@ -3,6 +3,12 @@
 @import '@fontsource/fira-mono';
 @import "tailwindcss";
 
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 :root {
 	--font-body:
 		Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
@@ -66,15 +72,6 @@ h2 {
 	font-size: 1rem;
 }
 
-.text-column {
-	display: flex;
-	max-width: 48rem;
-	flex: 0.6;
-	flex-direction: column;
-	justify-content: center;
-	margin: 0;
-}
-
 input,
 button {
 	font-size: inherit;
@@ -83,10 +80,4 @@ button {
 
 button:focus:not(:focus-visible) {
 	outline: none;
-}
-
-@media (min-width: 720px) {
-	h1 {
-		font-size: 2.4rem;
-	}
 }

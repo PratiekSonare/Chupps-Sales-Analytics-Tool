@@ -11,12 +11,6 @@
 	<main>
 		{@render children()}
 	</main>
-
-	<footer>
-		<p>
-			visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to learn about SvelteKit
-		</p>
-	</footer>
 </div>
 
 <style>
@@ -30,10 +24,9 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		padding: 1rem;
-		width: 100%;
-		max-width: 64rem;
-		margin: 0 auto;
+		padding: 0;
+		width: fit-content;
+		margin: 0;
 		box-sizing: border-box;
 	}
 

@@ -1,10 +1,9 @@
 <script>
     export let onSelect;
+    export let activeView;
 </script>
 
-<aside
-    class="w-32 bg-gray-900 shadow-2xl py-4 px-0 border-r absolute left-0 top-0 h-full items-stretch"
->
+<aside class="w-full h-full bg-gray-900 shadow-2xl py-4 px-0 border-r">
     <ul class="space-y-2">
         <li>
             <img
@@ -18,7 +17,8 @@
 
         <button
             class="flex flex-col gap-1 items-center mb-0 hover:bg-gray-700 py-5 w-full"
-            on:click={()=>onSelect('home')}
+            class:bg-gray-600={activeView == "home"}
+            on:click={() => onSelect("home")}
         >
             <svg
                 class="mx-auto w-8 h-8 text-gray-800 dark:text-white"
@@ -43,7 +43,8 @@
 
         <button
             class="flex flex-col gap-1 items-center mb-0 hover:bg-gray-700 py-5 w-full"
-            on:click={()=>onSelect('data')}
+            class:bg-gray-600={activeView == "data"}
+            on:click={() => onSelect("data")}
         >
             <svg
                 class="mx-auto w-8 h-8 text-gray-800 dark:text-white"
@@ -68,7 +69,8 @@
 
         <button
             class="flex flex-col gap-1 items-center mb-5 hover:bg-gray-700 py-5 w-full"
-            on:click={()=>onSelect('forecast')}
+            class:bg-gray-600={activeView == "forecast"}
+            on:click={() => onSelect("forecast")}
         >
             <svg
                 class="mx-auto w-8 h-8 text-gray-800 dark:text-white"
