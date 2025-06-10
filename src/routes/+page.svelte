@@ -1,6 +1,6 @@
 <script lang="ts">
 	export let data;
-	const { wo_centro_prophet, total_sales, total_revenue, total_parties, chupps_items } = data;
+	const { wo_centro_prophet, chupps_23_25_full, total_sales, total_revenue, total_parties, chupps_items } = data;
 
 	import Forecast from "./Forecast.svelte";
 	import Sidebar from "./sidebar/Sidebar.svelte";
@@ -32,7 +32,7 @@
 		{:else if activeView === "data"}
 			<Data />
 		{:else if activeView === "forecast"}
-			<Forecast {wo_centro_prophet} total_sales={total_sales} total_revenue={total_revenue} total_parties={total_parties} chupps_items={chupps_items} />
+			<Forecast {wo_centro_prophet} {chupps_23_25_full} total_sales={total_sales} total_revenue={total_revenue} total_parties={total_parties} chupps_items={chupps_items} />
 		{/if}
 	</section>
 </main>

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 export const load: PageServerLoad = async () => {
   // Query the table
   const { data: wo_centro_prophet, error: err1 } = await supabase.from('wo_centro_prophet').select('*');
+  const { data: chupps_23_25_full, error: err6 } = await supabase.from('chupps_23_25_full').select('*');
   const { data: chupps_items_noSort, error: err3 } = await supabase.from('unique_items_view').select('item');
   const { data: chupps_sales, error: err2 } = await supabase.from('total_sales').select('sales');
   const { data: chupps_revenue, error: err4 } = await supabase.from('total_revenue').select('revenue');
@@ -17,14 +18,14 @@ export const load: PageServerLoad = async () => {
     console.log('Data fetched successfully!');
   }
 
+  // console.log('chupps data full: ', chupps_23_25_full);
+
   const total_sales = chupps_sales[0].sales;
   const total_revenue = chupps_revenue[0].revenue;
-
   const total_parties = chupps_parties[0].party;
   const chupps_items = chupps_items_noSort?.sort();
 
-  console.log('chupps_items: ', chupps_sales)
   return {
-    wo_centro_prophet, total_sales, total_revenue, total_parties, chupps_items
+    wo_centro_prophet, chupps_23_25_full, total_sales, total_revenue, total_parties, chupps_items
   };
 };

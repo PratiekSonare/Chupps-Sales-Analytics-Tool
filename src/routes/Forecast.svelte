@@ -1,16 +1,27 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { slide } from "svelte/transition";
+  import {
+    blur,
+    crossfade,
+    draw,
+    fade,
+    fly,
+    scale,
+    slide,
+  } from "svelte/transition";
   import { format } from "d3-format";
   const formatNumber = format(",");
 
   export let wo_centro_prophet;
+  export let chupps_23_25_full;
   export let total_sales;
   export let total_revenue;
   export let total_parties;
   export let chupps_items;
 
   let forecast = [];
+  let og_forecast = [];
+
   let filteredForecast = [];
   let dataToPlot = [];
 
@@ -22,19 +33,15 @@
   let max_sales_day = 0;
   let firstTrend = 0;
   let lastTrend = 0;
-  let forecast_trend = "";
+  let forecast_trend = "Upward";
 
   //from 2024-04-01 to 2025-02-01
   let forecast_total_sales = 156596;
   let monthly_avg_sales = 15578;
   let weekly_avg_sales = 3582;
-
-  // $: filteredForecast = filterForecast();
-
-  // $: forecast_total_sales = filteredForecast.reduce(
-  //   (sum, d) => sum + d.yhat,
-  //   0,
-  // );
+  let item_name = "";
+  let setOpen = true;
+  let item_sales_data = wo_centro_prophet;
 
   $: formatted_total_sales = formatNumber(total_sales.toFixed(0));
   $: formatted_forecast_total_sales = formatNumber(
@@ -43,16 +50,6 @@
   $: formatted_total_revenue = formatNumber(total_revenue.toFixed(0));
   $: formatted_monthly_avg_sales = formatNumber(monthly_avg_sales.toFixed(0));
   $: formatted_weekly_avg_sales = formatNumber(weekly_avg_sales.toFixed(0));
-
-  // Time range (in ms, days, weeks, months)
-  $: {
-    // const msDiff = new Date(endDate).getTime() - new Date(startDate).getTime();
-    // const daysDiff = msDiff / (1000 * 60 * 60 * 24);
-    // const weeksDiff = daysDiff / 7;
-    // const monthsDiff = daysDiff / 30.44; // Average month duration
-    // monthly_avg_sales = monthsDiff > 0 ? total_sales / monthsDiff : 0;
-    // weekly_avg_sales = weeksDiff > 0 ? total_sales / weeksDiff : 0;
-  }
 
   $: stats = [
     {
@@ -71,11 +68,29 @@
       title: "Trend",
       value: forecast_trend,
     },
+    {
+      title: "Params...",
+      value: 1000,
+    },
   ];
 
+  $: if (item_name) {
+    itemChosenForForecast(item_name);
+  }
+
+  // $: { // when forecast changes, run this block
+  //     // Check trend direction
+  //     const firstTrend = forecast[0]?.trend ?? 0;
+  //     const lastTrend = forecast[forecast.length - 1]?.trend ?? 0;
+  //     forecast_trend = lastTrend > firstTrend ? "Upward" : "Downward";
+
+  //     console.log("trend:", forecast_trend);
+  //     console.log('firstTrend: ', firstTrend);
+  //     console.log('lastTrend: ', lastTrend);
+  // }
+
   onMount(async () => {
-    console.log("Component is inside mount");
-    const formatted = wo_centro_prophet.map((row) => ({
+    const agg_data = wo_centro_prophet.map((row) => ({
       ds: row.ds,
       y: row.y,
     }));
@@ -83,21 +98,53 @@
     const res = await fetch("http://localhost:8000/forecast", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: formatted }),
+      body: JSON.stringify({ data: agg_data }),
     });
 
     forecast = await res.json();
+    og_forecast = forecast;
     console.log("result: ", forecast.trend);
-    // Check trend direction
-    const firstTrend = forecast[0]?.trend ?? 0;
-    const lastTrend = forecast[forecast.length - 1]?.trend ?? 0;
-    forecast_trend = lastTrend > firstTrend ? "Upward" : "Downward";
-
-    console.log("trend:", forecast_trend);
 
     filteredForecast = filterForecast(); // ← Make sure to populate
     plotForecast(filteredForecast);
   });
+
+  async function itemChosenForForecast(item) {
+    const total_data = chupps_23_25_full.map((row) => ({
+      purDate: row.purDate,
+      item: row.item,
+      sales: row.sales,
+    }));
+
+    try {
+      const res = await fetch(
+        `http://localhost:8000/forecast/item/${encodeURIComponent(item)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: total_data }),
+        },
+      );
+      forecast = await res.json();
+    } catch (err) {
+      console.error(`Failed to fetch forecast for item - ${item}:`, err);
+    }
+
+    try {
+      const res2 = await fetch(
+        `http://localhost:8000/item/${encodeURIComponent(item)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: total_data }),
+        },
+      );
+
+      item_sales_data = await res2.json();
+    } catch {
+      console.error(`Failed to fetch sales data for item - ${item}:`, err);
+    }
+  }
 
   function filterForecast() {
     if (!forecast.length) return [];
@@ -128,6 +175,19 @@
     monthly_avg_sales = monthsDiff > 0 ? forecast_total_sales / monthsDiff : 0;
     weekly_avg_sales = weeksDiff > 0 ? forecast_total_sales / weeksDiff : 0;
 
+    const firstTrend = forecast[0]?.trend ?? 0;
+    const lastTrend = forecast[forecast.length - 1]?.trend ?? 0;
+    
+    if (firstTrend == 0 && lastTrend == 0) {
+      forecast_trend == "NO TREND";
+    } else {
+      forecast_trend = lastTrend > firstTrend ? "Upward" : "Downward";
+    }
+
+      console.log("trend:", forecast_trend);
+      console.log('firstTrend: ', firstTrend);
+      console.log('lastTrend: ', lastTrend);
+
     if (filtered.length) {
       plotForecast(filtered);
     }
@@ -136,6 +196,16 @@
   function resetDate() {
     startDate = "2025-03-01";
     endDate = "2026-02-01";
+
+    const filtered = filterForecast();
+    if (filtered.length) {
+      plotForecast(filtered);
+    }
+  }
+
+  function resetItem() {
+    forecast = og_forecast;
+    item_sales_data = wo_centro_prophet;
 
     const filtered = filterForecast();
     if (filtered.length) {
@@ -165,24 +235,33 @@
 
     const trace3 = {
       x: dataToPlot.map((d) => d.ds),
-      y: dataToPlot.map((d) => d.yhat_lower),
+      y: dataToPlot.map((d) => d.trend),
       mode: "lines",
-      fill: "tonexty",
-      line: { width: 1 },
-      name: "Min. Sales",
+      // fill: "tonexty",
+      line: { width: 2 },
+      name: "Trend",
       // fillcolor: "rgba(0,100,80,0.2)",
       showlegend: true,
     };
 
-    const trace4 = {
-      x: wo_centro_prophet.map((d) => d.ds),
-      y: wo_centro_prophet.map((d) => d.y),
+    const daily_sales_plot = {
+      x: item_sales_data.map((d) => d.ds),
+      y: item_sales_data.map((d) => d.y),
       mode: "lines",
       name: "Forecast",
     };
 
     const layout = {
       title: "Forecast",
+      margin: { t: 50, l: 50, r: 50, b: 50 },
+      xaxis: { title: "Date" },
+      yaxis: { title: "Sales" },
+    };
+
+    const layoutForecast = {
+      title: "Forecast",
+      height: 350,
+      margin: { t: 50, l: 50, r: 50, b: 50 },
       xaxis: { title: "Date" },
       yaxis: { title: "Sales" },
     };
@@ -210,12 +289,17 @@
       },
     };
 
-    (window as any).Plotly.newPlot("forecast-plot", [trace1, trace2], layout, {
-      displayModeBar: false,
-      responsive: true,
-    });
+    (window as any).Plotly.newPlot(
+      "forecast-plot",
+      [trace1, trace2, trace3],
+      layoutForecast,
+      {
+        displayModeBar: false,
+        responsive: true,
+      },
+    );
 
-    (window as any).Plotly.newPlot("actual-plot", [trace4], layout, {
+    (window as any).Plotly.newPlot("actual-plot", [daily_sales_plot], layout, {
       displayModeBar: false,
       responsive: true,
     });
@@ -235,27 +319,28 @@
     );
   }
 
-  let setOpen = false;
-
   function openSet() {
     setOpen = !setOpen;
   }
 </script>
 
 <div class="w-screen h-screen">
-  <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr] gap-5 h-full p-2">
+  <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr_1fr] gap-5 h-full p-2">
     <div class="card flex flex-col p-0">
       <span>Total Pairs Sold</span>
+      <span class="text-gray-400 text-[10px] -mt-1">(All Time)</span>
       <span class="text-4xl text-black">{formatted_total_sales}</span>
     </div>
 
     <div class="card flex flex-col p-2">
       <span>Total Revenue Generated</span>
+      <span class="text-gray-400 text-[10px] -mt-1">(All Time)</span>
       <span class="text-4xl text-black">{formatted_total_revenue}</span>
     </div>
 
     <div class="card flex flex-col p-2">
       <span>Total Parties Served</span>
+      <span class="text-gray-400 text-[10px] -mt-1">(All Time)</span>
       <span class="text-4xl text-black">{total_parties}</span>
     </div>
 
@@ -263,7 +348,7 @@
     {#if setOpen}
       <div
         class="col-start-4 row-start-1 transition-all duration-500 ease-in-out"
-        transition:slide
+        transition:blur
       >
         <div class="flex flex-col gap-1 p-2 w-full">
           <!-- Start date picker -->
@@ -312,14 +397,21 @@
           <!-- Dropdown for items -->
           <div class="flex flex-col items-center w-full">
             <span class="text-xs">Choose Item</span>
-            <select
-              bind:value={selectedItem}
-              class="border rounded px-1 py-1 w-full"
-            >
-              {#each chupps_items as i}
-                <option value={i.item}>{i.item}</option>
-              {/each}
-            </select>
+            <div class="flex flex-row gap-1 w-full">
+              <button
+                on:click={resetItem}
+                class="border rounded p-1 border-green-500 hover:bg-green-500 hover:text-white transition-colors duration-300 ease-in-out"
+                >All</button
+              >
+              <select
+                bind:value={item_name}
+                class="border rounded px-1 py-1 w-full"
+              >
+                {#each [...chupps_items].sort( (a, b) => a.item.localeCompare(b.item), ) as i}
+                  <option value={i.item}>{i.item}</option>
+                {/each}
+              </select>
+            </div>
           </div>
 
           <button
@@ -338,22 +430,20 @@
       <div id="forecast-table" class="w-full h-full"></div>
     </div>
 
-    <div
-      class="card-alt2 col-start-3 row-start-3 row-end-4 flex-col w-full h-full"
-    >
+    <div class="card-alt2 col-start-3 row-start-3 flex-col w-full h-full">
       <div class="flex flex-col justify-center items-center my-5">
         <span class="">Data Statistics</span>
-        <span class="text-gray-400 text-xs -mt-1"
+        <span class="text-gray-400 text-[10px] -mt-1"
           >(in the selected timeframe)</span
         >
       </div>
       {#each stats as stat}
         <div
-          class="flex flex-row justify-between items-center py-1 border-b w-11/12"
+          class="flex flex-row justify-between items-center pt-1 border-b border-gray-400 rounded-r-xl w-11/12"
         >
           <span class="text-base text-gray-500">{stat.title}</span>
           <span
-            class={`text-xl font-medium text-right
+            class={`text-xl font-medium text-right mr-2
         ${
           stat.title === "Trend"
             ? stat.value === "Upward"
@@ -369,6 +459,12 @@
       {/each}
     </div>
 
+    <div
+      class="card-alt2 col-start-3 row-start-4 row-end-5 flex-col w-full h-full"
+    >
+      <span class="mt-2">Forecast Details</span>
+    </div>
+
     <div class="col-span-2 card flex flex-col">
       <span class="mt-5">Daily Sales</span>
       <div
@@ -377,7 +473,7 @@
       ></div>
     </div>
 
-    <div class="col-span-2 card flex flex-col">
+    <div class="col-span-2 row-span-3 card flex flex-col">
       <div class="flex flex-col items-center justify-center w-full gap-0">
         <span class="mt-5 text-center">Forecasted Sales</span>
         <button
@@ -406,12 +502,15 @@
       ></div>
     </div>
 
-    <div
-      class={`card col-start-4 transition-all duration-500 ease-in-out
-      ${setOpen ? "row-start-2 row-end-4" : "row-start-1 row-end-4"}`}
-    >
-      <span>AI Insights</span>
-    </div>
+    {#if setOpen}
+      <div class="card col-start-4 row-start-2 row-end-5">
+        <span>AI Insights</span>
+      </div>
+    {:else}
+      <div class="card col-start-4 row-start-1 row-end-5">
+        <span>AI Insights</span>
+      </div>
+    {/if}
   </div>
 </div>
 
