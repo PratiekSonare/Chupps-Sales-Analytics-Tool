@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { marked } from "marked";
   import {
     blur,
     crossfade,
@@ -10,14 +11,19 @@
     slide,
   } from "svelte/transition";
   import { format } from "d3-format";
+  import AIBro from "./AIBro.svelte";
+
   const formatNumber = format(",");
 
   export let wo_centro_prophet;
+  // export let non_zero_no_spikes_prophet;
+  // export let chupps_23_25_full;
   export let chupps_23_25_full;
   export let total_sales;
   export let total_revenue;
   export let total_parties;
   export let chupps_items;
+  export let chupps_shades;
 
   let forecast = [];
   let og_forecast = [];
@@ -25,8 +31,9 @@
   let filteredForecast = [];
   let dataToPlot = [];
 
+  let naData = false;
+
   // Dropdown & calendar variables
-  let selectedItem = "";
   let startDate = "2024-04-01";
   let endDate = "2025-02-01";
   let maxEntry = 0;
@@ -39,7 +46,16 @@
   let forecast_total_sales = 156596;
   let monthly_avg_sales = 15578;
   let weekly_avg_sales = 3582;
+  let yearly_avg_sales = 195370;
+
+  let llm_response = "Loading..."; // Initialize with a placeholder
+
+  if (yearly_avg_sales === 0) {
+    forecast_trend = "NO TREND";
+  }
+
   let item_name = "";
+  let shade_name = "";
   let setOpen = true;
   let item_sales_data = wo_centro_prophet;
 
@@ -50,11 +66,16 @@
   $: formatted_total_revenue = formatNumber(total_revenue.toFixed(0));
   $: formatted_monthly_avg_sales = formatNumber(monthly_avg_sales.toFixed(0));
   $: formatted_weekly_avg_sales = formatNumber(weekly_avg_sales.toFixed(0));
+  $: formatted_yearly_avg_sales = formatNumber(yearly_avg_sales.toFixed(0));
 
   $: stats = [
     {
       title: "Expected Total Sales",
       value: formatted_forecast_total_sales,
+    },
+    {
+      title: "Yearly Avg. Sales",
+      value: formatted_yearly_avg_sales,
     },
     {
       title: "Monthly Avg. Sales",
@@ -74,22 +95,39 @@
     },
   ];
 
+  $: details = [
+    {
+      title: "Period of forecast",
+      value: 365,
+    },
+    {
+      title: "Number of days forecasted",
+      value: forecast.length,
+    },
+  ];
+
   $: if (item_name) {
     itemChosenForForecast(item_name);
   }
 
-  // $: { // when forecast changes, run this block
-  //     // Check trend direction
-  //     const firstTrend = forecast[0]?.trend ?? 0;
-  //     const lastTrend = forecast[forecast.length - 1]?.trend ?? 0;
-  //     forecast_trend = lastTrend > firstTrend ? "Upward" : "Downward";
+  $: if (shade_name) {
+    shadeChosenForForecast(shade_name);
+  }
 
-  //     console.log("trend:", forecast_trend);
-  //     console.log('firstTrend: ', firstTrend);
-  //     console.log('lastTrend: ', lastTrend);
-  // }
+  // Reactive block that updates when dependencies change
+  $: {
+    (async () => {
+      const curr_metadata = generateMetadata();
+      llm_response = await getLLMResponse(curr_metadata); // 👈 Add await
+    })();
+  }
+
+  $: renderedMarkdown = marked(llm_response || "");
 
   onMount(async () => {
+
+    console.log('llm markdown', renderedMarkdown);
+
     const agg_data = wo_centro_prophet.map((row) => ({
       ds: row.ds,
       y: row.y,
@@ -103,9 +141,8 @@
 
     forecast = await res.json();
     og_forecast = forecast;
-    console.log("result: ", forecast.trend);
 
-    filteredForecast = filterForecast(); // ← Make sure to populate
+    filteredForecast = filterForecast();
     plotForecast(filteredForecast);
   });
 
@@ -141,8 +178,45 @@
       );
 
       item_sales_data = await res2.json();
-    } catch {
+    } catch (err) {
       console.error(`Failed to fetch sales data for item - ${item}:`, err);
+    }
+  }
+
+  async function shadeChosenForForecast(shade) {
+    const total_data = chupps_23_25_full.map((row) => ({
+      purDate: row.purDate,
+      shade: row.shade,
+      sales: row.sales,
+    }));
+
+    try {
+      const res = await fetch(
+        `http://localhost:8000/forecast/shade/${encodeURIComponent(shade)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: total_data }),
+        },
+      );
+      forecast = await res.json();
+    } catch (err) {
+      console.error(`Failed to fetch forecast for item - ${shade}:`, err);
+    }
+
+    try {
+      const res2 = await fetch(
+        `http://localhost:8000/shade/${encodeURIComponent(shade)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: total_data }),
+        },
+      );
+
+      item_sales_data = await res2.json();
+    } catch (err) {
+      console.error(`Failed to fetch sales data for item - ${shade}:`, err);
     }
   }
 
@@ -155,42 +229,56 @@
         (!startDate || date >= new Date(startDate)) &&
         (!endDate || date <= new Date(endDate));
 
-      // const itemMatch = selectedItem ? d.item === selectedItem : true; // If forecast contains item info
       return inRange;
     });
   }
 
   function applyFilters() {
     const filtered = filterForecast();
-
     filteredForecast = filterForecast();
 
+    //total sales for timeframe
     forecast_total_sales = filteredForecast.reduce((sum, d) => sum + d.yhat, 0);
 
+    if (forecast_total_sales === 0) {
+      naData = true;
+      forecast_trend = "NO TREND";
+    }
+
+    //avg sales calculation
     const msDiff = new Date(endDate).getTime() - new Date(startDate).getTime();
     const daysDiff = msDiff / (1000 * 60 * 60 * 24);
     const weeksDiff = daysDiff / 7;
     const monthsDiff = daysDiff / 30.44; // Average month duration
+    const yearsDiff = monthsDiff / 12;
 
     monthly_avg_sales = monthsDiff > 0 ? forecast_total_sales / monthsDiff : 0;
     weekly_avg_sales = weeksDiff > 0 ? forecast_total_sales / weeksDiff : 0;
+    yearly_avg_sales = yearsDiff > 0 ? forecast_total_sales / yearsDiff : 0;
 
+    //trend calculation
     const firstTrend = forecast[0]?.trend ?? 0;
     const lastTrend = forecast[forecast.length - 1]?.trend ?? 0;
-    
-    if (firstTrend == 0 && lastTrend == 0) {
+
+    if (yearly_avg_sales === 0) {
       forecast_trend == "NO TREND";
     } else {
       forecast_trend = lastTrend > firstTrend ? "Upward" : "Downward";
     }
 
-      console.log("trend:", forecast_trend);
-      console.log('firstTrend: ', firstTrend);
-      console.log('lastTrend: ', lastTrend);
+    console.log("firstTrend: ", firstTrend);
+    console.log("lastTrend: ", lastTrend);
 
+    //call plotting of forecast
     if (filtered.length) {
       plotForecast(filtered);
     }
+
+    // let llm_response = ""
+    const curr_metadata = generateMetadata();
+    llm_response = getLLMResponse(curr_metadata);
+
+    console.log("metadata produced: ", curr_metadata);
   }
 
   function resetDate() {
@@ -206,6 +294,8 @@
   function resetItem() {
     forecast = og_forecast;
     item_sales_data = wo_centro_prophet;
+    item_name = "";
+    shade_name = "";
 
     const filtered = filterForecast();
     if (filtered.length) {
@@ -322,10 +412,107 @@
   function openSet() {
     setOpen = !setOpen;
   }
+
+  //LLM PARSING
+  // In your <script> block
+  function generateMetadata() {
+    return {
+      timestamp: new Date().toISOString(),
+      filters: {
+        item: item_name || "All Items", // Shows 'All Items' when undefined/null
+        shade: shade_name || "All Shades",
+        dateRange: {
+          start: startDate,
+          end: endDate,
+          isDefault: startDate === "2024-04-01" && endDate === "2025-02-01",
+        },
+        aggregationLevel:
+          !item_name && !shade_name
+            ? "All Products"
+            : item_name
+              ? "Single Item"
+              : "Single Shade",
+      },
+      metrics: {
+        forecastTotalSales: forecast_total_sales,
+        trend: forecast_trend,
+        avgSales: {
+          monthly: monthly_avg_sales.toFixed(2),
+          weekly: weekly_avg_sales.toFixed(2),
+          yearly: yearly_avg_sales.toFixed(2),
+        },
+      },
+      dataStats: {
+        forecastDays: forecast.length,
+        itemSales: item_sales_data?.length || 0,
+      },
+      prophet_model_stats: {
+        predictionPeriod: 365,
+        holidays: ["2024-02-29", "2024-01-30", "2025-02-28"],
+        holidays_prior_scale: 10,
+      },
+    };
+  }
+
+  async function getLLMResponse(metadata) {
+    const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity. 
+                  Draw crucial insights from the metadata and relate this metadata with the geographical, economical and temporal (seasons, time of the year) knowledge to give a summary on your insights.
+                  From your analytical insights, return what possible actions the sales manager at this firm should perform to improve the sales of this product. 
+
+                  Some background/domain about the brand with the sales: The sales belong to a budding open footwear brand in India. The brand currently operates on a distributor model, with major distributors across India ordering footwear in bulk at a time.
+                  Recently, they have also started online marketplace and offline store based sales. The input data to the forecasting model contains this data.
+                  
+                  Now, some background/domain about the metadata that is being provided to you: 
+                    1. filters: specifies the item or shade used to filter and display sales and forecasted data belonging to that item or shade. it also includes date filtering, that you musst take into account while analyzing. If aggregationLevel is 'All Products', that means the meta-data belongs to total sales record, otherwise it is for a particular item or a shade. dateRange is the range of dates used to filter display data for.
+                    2. metrics: some metrics that are being displayed in the tool, avg_sales contain yearly, monthly and weekly average sales of entire sales or for a particular item or shade. forecastTotalSales is the sum of forecasted sales for all products or either a particular item or shade, within the dateRange.
+                    3. prophet_model_stats: the parameters used for fitting the sales data with Prophet model by Meta. holidays mentions days of importance, since we notice a spike in sales during these days. predictionPeriod is the number of days predicted by the model ahdead of the latest day in the input data.
+                    
+                    Here's the input meta-data: ${JSON.stringify(metadata, null, 2)}
+
+                    Focus on:
+                    1. Key trends in the data
+                    2. Anomalies or unexpected patterns
+                    3. Business recommendations based on the metrics`;
+
+    try {
+      const response = await fetch("http://localhost:8000/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "system",
+              content: "You are a data analyst assistant...",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.detail || `HTTP error! status: ${response.status}`,
+        );
+      }
+
+      const data = await response.json();
+      console.log("openrouter response: ", data);
+
+      return data.choices[0]?.message?.content || "No response from AI";
+    } catch (error) {
+      console.error("Error fetching LLM response:", error);
+    }
+  }
 </script>
 
 <div class="w-screen h-screen">
-  <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr_1fr] gap-5 h-full p-2">
+  <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr_1fr] gap-3 h-full p-2">
     <div class="card flex flex-col p-0">
       <span>Total Pairs Sold</span>
       <span class="text-gray-400 text-[10px] -mt-1">(All Time)</span>
@@ -351,6 +538,21 @@
         transition:blur
       >
         <div class="flex flex-col gap-1 p-2 w-full">
+          <!-- choose database -->
+          <!-- <select
+            bind:value={selectedDatabaseKey}
+            class="border rounded px-1 py-1 w-full transition-colors"
+          >
+            <option value="" disabled selected hidden>
+              "Select database"
+            </option>
+
+            <option value="wo_centro_prophet">Original Dataset</option>
+            <option value="non_zero_no_spikes_prophet"
+              >Dataset w/o Spikes</option
+            >
+          </select> -->
+
           <!-- Start date picker -->
           <div class="flex flex-row justify-between w-full">
             <!-- svelte-ignore a11y_consider_explicit_label -->
@@ -396,19 +598,48 @@
 
           <!-- Dropdown for items -->
           <div class="flex flex-col items-center w-full">
-            <span class="text-xs">Choose Item</span>
+            <span class="text-xs">Choose Item or Shade</span>
             <div class="flex flex-row gap-1 w-full">
               <button
                 on:click={resetItem}
                 class="border rounded p-1 border-green-500 hover:bg-green-500 hover:text-white transition-colors duration-300 ease-in-out"
                 >All</button
               >
+              <!-- Item Selector -->
               <select
                 bind:value={item_name}
-                class="border rounded px-1 py-1 w-full"
+                class="border rounded px-1 py-1 w-full transition-colors"
+                class:bg-gray-400={shade_name !== ""}
+                class:text-gray-500={shade_name !== ""}
+                class:cursor-not-allowed={shade_name !== ""}
+                disabled={shade_name !== ""}
               >
+                <!-- Placeholder option (disabled, hidden in dropdown) -->
+                <option value="" disabled selected hidden>
+                  {shade_name !== "" ? "" : "Select item"}
+                </option>
+
                 {#each [...chupps_items].sort( (a, b) => a.item.localeCompare(b.item), ) as i}
                   <option value={i.item}>{i.item}</option>
+                {/each}
+              </select>
+
+              <!-- Shade Selector -->
+              <select
+                bind:value={shade_name}
+                class="border rounded px-1 py-1 w-full transition-colors"
+                class:bg-gray-400={item_name !== ""}
+                class:text-gray-500={item_name !== ""}
+                class:cursor-not-allowed={item_name !== ""}
+                disabled={item_name !== ""}
+              >
+                <!-- Placeholder option -->
+                <option value="" disabled selected hidden>
+                  {item_name !== "" ? "" : "Select shade"}
+                </option>
+
+                {#each [...chupps_shades].sort( (a, b) => a.shade.localeCompare(b.shade), ) as i}
+                  <option value={i.shade}>{i.shade}</option>
                 {/each}
               </select>
             </div>
@@ -417,6 +648,7 @@
           <button
             class="p-0 mt-1 border border-blue-500 rounded py-0 px-2 h-full hover:bg-blue-500 hover:text-white transition-all duration-300 ease-out"
             on:click={applyFilters}
+            class:bg-blue-500={item_name !== "" || shade_name !== ""}
           >
             Enter
           </button>
@@ -437,9 +669,10 @@
           >(in the selected timeframe)</span
         >
       </div>
-      {#each stats as stat}
+      {#each stats as stat, i}
         <div
           class="flex flex-row justify-between items-center pt-1 border-b border-gray-400 rounded-r-xl w-11/12"
+          class:border-b-0={i === stats.length - 1}
         >
           <span class="text-base text-gray-500">{stat.title}</span>
           <span
@@ -460,9 +693,20 @@
     </div>
 
     <div
-      class="card-alt2 col-start-3 row-start-4 row-end-5 flex-col w-full h-full"
+      class="card-alt2 col-start-3 row-start-4 row-end-6 flex-col w-full h-full"
     >
       <span class="mt-2">Forecast Details</span>
+      {#each details as stat, i}
+        <div
+          class="flex flex-row justify-between items-center pt-1 border-b border-gray-400 rounded-r-xl w-11/12"
+          class:border-b-0={i === details.length - 1}
+        >
+          <span class="text-base text-gray-500">{stat.title}</span>
+          <span class={`text-xl font-medium text-right mr-2`}>
+            {stat.value}
+          </span>
+        </div>
+      {/each}
     </div>
 
     <div class="col-span-2 card flex flex-col">
@@ -496,21 +740,48 @@
           Settings
         </button>
       </div>
-      <div
-        id="forecast-plot"
-        class="w-full h-full rounded-2xl overflow-hidden"
-      ></div>
+
+      {#if !naData}
+        <div
+          id="forecast-plot"
+          class="w-full h-auto rounded-2xl overflow-auto"
+        ></div>
+      {:else}
+        <div
+          class="flex flex-col justify-center items-center gap-5 mt-10 px-32"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="80"
+            height="80"
+            fill="red-500"
+            class="bi bi-ban"
+            viewBox="0 0 16 16"
+          >
+            <path
+              d="M15 8a6.97 6.97 0 0 0-1.71-4.584l-9.874 9.875A7 7 0 0 0 15 8M2.71 12.584l9.874-9.875a7 7 0 0 0-9.874 9.874ZM16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0"
+            />
+          </svg><span class="text-red-500 text-3xl text-center"
+            >Not enough data for this shade/item to forecast!</span
+          >
+        </div>
+      {/if}
     </div>
 
-    {#if setOpen}
-      <div class="card col-start-4 row-start-2 row-end-5">
-        <span>AI Insights</span>
+    <div
+      class="card flex-col col-start-4 row-end-6 overflow-y-auto p-4 bg-white rounded shadow"
+      class:row-start-1={!setOpen}
+      class:row-start-2={setOpen}
+    >
+      <span class="font-semibold text-base mb-2">AI Insights</span>
+
+      <!-- Use a wrapper div and inject HTML using {@html ...} below -->
+      <div
+        class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose"
+      > 
+        {@html renderedMarkdown}
       </div>
-    {:else}
-      <div class="card col-start-4 row-start-1 row-end-5">
-        <span>AI Insights</span>
-      </div>
-    {/if}
+    </div>
   </div>
 </div>
 
