@@ -6,6 +6,7 @@
   import { blur } from "svelte/transition";
   import { format } from "d3-format";
   import AIBro from "./AIBro.svelte";
+    import ChuppsButton from "./ChuppsButton.svelte";
 
   const formatNumber = format(",");
 
@@ -55,7 +56,6 @@
   let setOpen = true;
   let isLLMon = false;
   let isLLMthinking = false;
-  let expand_rotate = false;
   let expand_forecast = false;
 
   let item_sales_data = wo_centro_prophet;
@@ -123,7 +123,6 @@
 
     isLLMthinking = true;
     llm_used = llm_used - 1;
-
 
     if (item_name || shade_name || (!item_name && !shade_name)) {
       try {
@@ -259,6 +258,15 @@
     });
   }
 
+  $: {
+    if (forecast_total_sales === 0) {
+      naData = true;
+      forecast_trend = "NO TREND";
+    } else {
+      naData = false;
+    }
+  }
+
   function applyFilters() {
     const filtered = filterForecast();
     filteredForecast = filterForecast();
@@ -266,10 +274,8 @@
     //total sales for timeframe
     forecast_total_sales = filteredForecast.reduce((sum, d) => sum + d.yhat, 0);
 
-    if (forecast_total_sales === 0) {
-      naData = true;
-      forecast_trend = "NO TREND";
-    }
+    // Reset naData based on current data
+    naData = forecast_total_sales === 0;
 
     //avg sales calculation
     const msDiff = new Date(endDate).getTime() - new Date(startDate).getTime();
@@ -287,7 +293,7 @@
     const lastTrend = forecast[forecast.length - 1]?.trend ?? 0;
 
     if (yearly_avg_sales === 0) {
-      forecast_trend == "NO TREND";
+      forecast_trend = "NO TREND"; // Fixed: changed == to = and fixed typo
     } else {
       forecast_trend = lastTrend > firstTrend ? "Upward" : "Downward";
     }
@@ -296,7 +302,8 @@
     console.log("lastTrend: ", lastTrend);
 
     //call plotting of forecast
-    if (filtered.length) {
+    if (filtered.length && !naData) {
+      // Only plot if we have data and it's not NA
       plotForecast(filtered);
     }
   }
@@ -316,6 +323,7 @@
     item_sales_data = wo_centro_prophet;
     item_name = "";
     shade_name = "";
+    naData = false;
 
     const filtered = filterForecast();
     if (filtered.length) {
@@ -484,18 +492,18 @@
 
   async function getLLMResponse(metadata) {
     try {
-      // const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity. 
+      // const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity.
       //             Draw crucial insights from the metadata and relate this metadata with the geographical, economical and temporal (seasons, time of the year) knowledge to give a summary on your insights.
-      //             From your analytical insights, return what possible actions the sales manager at this firm should perform to improve the sales of this product. 
+      //             From your analytical insights, return what possible actions the sales manager at this firm should perform to improve the sales of this product.
 
       //             Some background/domain about the brand with the sales: The sales belong to a budding open footwear brand in India. The brand currently operates on a distributor model, with major distributors across India ordering footwear in bulk at a time.
       //             Recently, they have also started online marketplace and offline store based sales. The input data to the forecasting model contains this data.
-                  
-      //             Now, some background/domain about the metadata that is being provided to you: 
+
+      //             Now, some background/domain about the metadata that is being provided to you:
       //               1. filters: specifies the item or shade used to filter and display sales and forecasted data belonging to that item or shade. it also includes date filtering, that you musst take into account while analyzing. If aggregationLevel is 'All Products', that means the meta-data belongs to total sales record, otherwise it is for a particular item or a shade. dateRange is the range of dates used to filter display data for.
       //               2. metrics: some metrics that are being displayed in the tool, avg_sales contain yearly, monthly and weekly average sales of entire sales or for a particular item or shade. forecastTotalSales is the sum of forecasted sales for all products or either a particular item or shade, within the dateRange.
       //               3. prophet_model_stats: the parameters used for fitting the sales data with Prophet model by Meta. holidays mentions days of importance, since we notice a spike in sales during these days. predictionPeriod is the number of days predicted by the model ahdead of the latest day in the input data.
-                    
+
       //               Here's the input meta-data: ${JSON.stringify(metadata, null, 2)}
 
       //               Focus on:
@@ -518,9 +526,8 @@
                     Here's the input meta-data: ${JSON.stringify(metadata, null, 2)}
 
                     Focus on:
-                    1. Key trends in the data
-                    2. Anomalies or unexpected patterns
-                    3. Business recommendations based on the metrics`;
+                    1. Business recommendations based on the metrics
+                    2. Mention and compare these sales with potential competitor brands in India`;
 
       const response = await fetch("http://localhost:8000/api/chat", {
         method: "POST",
@@ -730,23 +737,9 @@
       class:row-start-1={expand_forecast}
       class:row-end-3={expand_forecast}
     >
-      <div
-        class="flex flex-row items-center justify-between w-full gap-0 px-10"
-      >
+      <div class="flex flex-row items-center justify-start w-full gap-5 px-10">
+        <ChuppsButton />
         <span class="mt-5 text-center text-3xl">Daily Sales</span>
-        <button
-          class="z-100 p-0 cursor-pointer transition-transform duration-300 ease-in-out {expand_rotate
-            ? 'rotate-[360deg]'
-            : ''}"
-          on:click={() => (expand_rotate = !expand_rotate)}
-        >
-          <img
-            src="/chupps-white.svg"
-            alt=""
-            class="invert block h-auto mt-3"
-            style="width: 25px;"
-          />
-        </button>
       </div>
       <div
         id="actual-plot"
@@ -758,9 +751,12 @@
       <div
         class="flex flex-row items-center justify-between w-full gap-0 px-10"
       >
-        <span class="mt-5 text-center align-middle text-3xl"
-          >Forecasted Sales</span
-        >
+        <div class="flex flex-row items-center justify-start w-full gap-5">
+          <ChuppsButton />
+          <span class="mt-5 text-center align-middle text-3xl"
+            >Forecasted Sales</span
+          >
+        </div>
         <button
           class="z-100 flex mt-auto flex-row gap-2 items-center justify-center text-gray-500 hover:text-black shadow-none hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)] border border-gray-300 p-2 rounded-lg text-xs transition-all duration-300 ease-in-out"
           on:click={openSet}
