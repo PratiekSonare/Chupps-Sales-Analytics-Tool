@@ -8,8 +8,9 @@ from typing import List, Dict, Optional
 from prophet import Prophet
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+import json 
 
-load_dotenv(".env.local")  # 👈 Add this line
+load_dotenv(".env.local") 
 
 
 app = FastAPI()
@@ -34,8 +35,6 @@ def forecast(req: ForecastRequest):
 
     # load df - aggregated data
     df = pd.DataFrame(req.data)
-
-    print('df head: ', df.head())
 
     df['ds'] = pd.to_datetime(df['ds'], format="%Y-%m-%d")
 
@@ -233,48 +232,99 @@ def forecast_shade_wise(shade_name: str = Path(...), req: ForecastRequestItem = 
         return {"error": str(e)}
 
 # DEEPSEEK response - DeepSeek: DeepSeek V3 0324
+
+
 class Message(BaseModel):
     role: str
     content: str
 
+
 class ChatRequest(BaseModel):
     messages: List[Message]
-    model: Optional[str] = "deepseek/deepseek-chat-v3-0324:free"
+    model: Optional[str] = "deepseek/deepseek-r1-0528:free"
+
+
+# @app.post("/api/chat")
+# async def chat_with_ai(request: ChatRequest):
+
+#     print('llm response called main.py')
+#     """
+#     Proxy request to OpenRouter AI
+#     Expected request body:
+#     {
+#         "messages": [
+#             {"role": "user", "content": "Your message here"}
+#         ],
+#         "model": "optional-model-name"
+#     }
+#     """
+#     try:
+#         print('checking api key existence.')
+#         api_key = os.getenv("OPENROUTER_KEY")
+#         print("apikey: ", api_key)
+#         if not api_key:
+#             print("OpenRouter API key not found in environment variables.")
+
+#         # Forward the exact request to OpenRouter
+#         response = requests.post(
+#             url="https://openrouter.ai/api/v1/chat/completions",
+#             headers={
+#                 "Authorization": f"Bearer {api_key}",
+#                 "Content-Type": "application/json",
+#                 "HTTP-Referer": "http://localhost:8000",  # Required by OpenRouter
+#                 "X-Title": "Sales Dashboard",             # Required by OpenRouter
+#             },
+#             json={
+#                 "model": request.model,
+#                 "messages": [msg.dict() for msg in request.messages]
+#             },
+#             timeout=30
+#         )
+#         response.raise_for_status()
+#         # print("response main.py: ", )
+#         return response.json()
+#     except requests.exceptions.RequestException as e:
+#         print('request not made to openrouter.')
 
 @app.post("/api/chat")
 async def chat_with_ai(request: ChatRequest):
-    
-    print('llm response called main.py')
-    """
-    Proxy request to OpenRouter AI
-    Expected request body:
-    {
-        "messages": [
-            {"role": "user", "content": "Your message here"}
-        ],
-        "model": "optional-model-name"
-    }
-    """
+    print('LLM endpoint called')
+
+    api_key = os.getenv("OPENROUTER_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=500, detail="OpenRouter API key missing")
+
     try:
-        api_key = os.getenv("OPENROUTER_KEY")
-        if not api_key:
-            print("OpenRouter API key not found in environment variables.")
-                    
-        # Forward the exact request to OpenRouter
+        # Debug print the request we're sending
+        request_data = {
+            "model": request.model or "openai/gpt-3.5-turbo",
+            "messages": [msg.dict() for msg in request.messages]
+        }
+
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:8000",  # Required by OpenRouter
-                "X-Title": "Sales Dashboard",             # Required by OpenRouter
+                "HTTP-Referer": "http://localhost:8000",
+                "X-Title": "Sales Dashboard",
             },
-            json={
-                "model": request.model,
-                "messages": [msg.dict() for msg in request.messages]
-            }
+            json=request_data,
+            timeout=30
         )
+
+        # Print raw response for debugging
+        # print(f"OpenRouter response: {response.status_code} - {response.text}")
+        print("llm called successfully!")
+
         response.raise_for_status()
+        print('backend llm response: ', response)
         return response.json()
+
     except requests.exceptions.RequestException as e:
-        print('request not made to openrouter.')
+        error_detail = f"OpenRouter request failed: {str(e)}"
+        if hasattr(e, 'response') and e.response:
+            error_detail += f" - Response: {e.response.text}"
+        print(error_detail)
+        raise HTTPException(status_code=502, detail=error_detail)

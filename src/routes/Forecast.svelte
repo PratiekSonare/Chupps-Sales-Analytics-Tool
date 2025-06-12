@@ -1,15 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { marked } from "marked";
-  import {
-    blur,
-    crossfade,
-    draw,
-    fade,
-    fly,
-    scale,
-    slide,
-  } from "svelte/transition";
+  import SvelteMarkdown from "svelte-markdown";
+
+  import { blur } from "svelte/transition";
   import { format } from "d3-format";
   import AIBro from "./AIBro.svelte";
 
@@ -32,6 +26,7 @@
   let dataToPlot = [];
 
   let naData = false;
+  let llm_used = 30;
 
   // Dropdown & calendar variables
   let startDate = "2024-04-01";
@@ -48,7 +43,8 @@
   let weekly_avg_sales = 3582;
   let yearly_avg_sales = 195370;
 
-  let llm_response = "Loading..."; // Initialize with a placeholder
+  let llm_response = "Select an item/shade and hit enter!"; // Better initial state
+  let renderedMarkdown = "";
 
   if (yearly_avg_sales === 0) {
     forecast_trend = "NO TREND";
@@ -57,6 +53,11 @@
   let item_name = "";
   let shade_name = "";
   let setOpen = true;
+  let isLLMon = false;
+  let isLLMthinking = false;
+  let expand_rotate = false;
+  let expand_forecast = false;
+
   let item_sales_data = wo_centro_prophet;
 
   $: formatted_total_sales = formatNumber(total_sales.toFixed(0));
@@ -114,20 +115,43 @@
     shadeChosenForForecast(shade_name);
   }
 
-  // Reactive block that updates when dependencies change
-  $: {
-    (async () => {
-      const curr_metadata = generateMetadata();
-      llm_response = await getLLMResponse(curr_metadata); // 👈 Add await
-    })();
+  async function runLLM() {
+    if (llm_used <= 0) {
+      console.log("LLM usage limit reached");
+      return;
+    }
+
+    isLLMthinking = true;
+    llm_used = llm_used - 1;
+
+
+    if (item_name || shade_name || (!item_name && !shade_name)) {
+      try {
+        // Show loading state
+        llm_response = "Analyzing data...";
+
+        // Generate appropriate metadata
+        const curr_metadata = generateMetadata();
+        console.log("curr_metadata: ", curr_metadata);
+
+        // Get LLM response (with error handling)
+        const response = await getLLMResponse(curr_metadata);
+        console.log("llm_response: ", response);
+
+        renderedMarkdown = marked(response || "Could not generate insights");
+      } catch (error) {
+        console.error("Error generating insights:", error);
+        llm_response = "Error generating insights. Please try again.";
+        renderedMarkdown = marked(
+          "Error generating insights. Please try again.",
+        );
+      } finally {
+        isLLMthinking = false;
+      }
+    }
   }
 
-  $: renderedMarkdown = marked(llm_response || "");
-
   onMount(async () => {
-
-    console.log('llm markdown', renderedMarkdown);
-
     const agg_data = wo_centro_prophet.map((row) => ({
       ds: row.ds,
       y: row.y,
@@ -141,6 +165,8 @@
 
     forecast = await res.json();
     og_forecast = forecast;
+
+    console.log("forecast: ", forecast);
 
     filteredForecast = filterForecast();
     plotForecast(filteredForecast);
@@ -273,12 +299,6 @@
     if (filtered.length) {
       plotForecast(filtered);
     }
-
-    // let llm_response = ""
-    const curr_metadata = generateMetadata();
-    llm_response = getLLMResponse(curr_metadata);
-
-    console.log("metadata produced: ", curr_metadata);
   }
 
   function resetDate() {
@@ -413,49 +433,77 @@
     setOpen = !setOpen;
   }
 
+  function setLLM() {
+    isLLMon = !isLLMon;
+    renderedMarkdown = "";
+  }
+
+  function expandForecast() {
+    expand_forecast = !expand_forecast;
+  }
   //LLM PARSING
-  // In your <script> block
   function generateMetadata() {
+    const isFiltered = item_name || shade_name;
+    const filteredData = isFiltered ? item_sales_data : wo_centro_prophet;
+    const currentForecast = isFiltered ? forecast : og_forecast;
+
     return {
-      timestamp: new Date().toISOString(),
-      filters: {
-        item: item_name || "All Items", // Shows 'All Items' when undefined/null
-        shade: shade_name || "All Shades",
-        dateRange: {
-          start: startDate,
-          end: endDate,
-          isDefault: startDate === "2024-04-01" && endDate === "2025-02-01",
-        },
-        aggregationLevel:
-          !item_name && !shade_name
-            ? "All Products"
-            : item_name
-              ? "Single Item"
-              : "Single Shade",
+      context: {
+        isFiltered,
+        filterType: item_name ? "item" : shade_name ? "shade" : "all products",
+        filterValue: item_name || shade_name || "none",
       },
-      metrics: {
-        forecastTotalSales: forecast_total_sales,
+      dateRange: {
+        start: startDate,
+        end: endDate,
+      },
+      statistics: {
+        totalSales: currentForecast.reduce((sum, d) => sum + d.yhat, 0),
         trend: forecast_trend,
-        avgSales: {
-          monthly: monthly_avg_sales.toFixed(2),
-          weekly: weekly_avg_sales.toFixed(2),
-          yearly: yearly_avg_sales.toFixed(2),
+        dataPoints: filteredData.length,
+        forecastPoints: currentForecast.length,
+        averages: {
+          daily: weekly_avg_sales / 7,
+          weekly: weekly_avg_sales,
+          monthly: monthly_avg_sales,
+          yearly: yearly_avg_sales,
         },
       },
-      dataStats: {
-        forecastDays: forecast.length,
-        itemSales: item_sales_data?.length || 0,
+      modelDetails: {
+        type: "Prophet",
+        seasonality: "yearly",
+        holidaysIncluded: true,
+        confidenceInterval: 80, //%
       },
-      prophet_model_stats: {
-        predictionPeriod: 365,
-        holidays: ["2024-02-29", "2024-01-30", "2025-02-28"],
-        holidays_prior_scale: 10,
-      },
+      // Add any other relevant data
+      rawSample: isFiltered
+        ? filteredData.slice(0, 5) // Sample of filtered data
+        : wo_centro_prophet.slice(0, 5), // Sample of all data
     };
   }
 
   async function getLLMResponse(metadata) {
-    const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity. 
+    try {
+      // const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity. 
+      //             Draw crucial insights from the metadata and relate this metadata with the geographical, economical and temporal (seasons, time of the year) knowledge to give a summary on your insights.
+      //             From your analytical insights, return what possible actions the sales manager at this firm should perform to improve the sales of this product. 
+
+      //             Some background/domain about the brand with the sales: The sales belong to a budding open footwear brand in India. The brand currently operates on a distributor model, with major distributors across India ordering footwear in bulk at a time.
+      //             Recently, they have also started online marketplace and offline store based sales. The input data to the forecasting model contains this data.
+                  
+      //             Now, some background/domain about the metadata that is being provided to you: 
+      //               1. filters: specifies the item or shade used to filter and display sales and forecasted data belonging to that item or shade. it also includes date filtering, that you musst take into account while analyzing. If aggregationLevel is 'All Products', that means the meta-data belongs to total sales record, otherwise it is for a particular item or a shade. dateRange is the range of dates used to filter display data for.
+      //               2. metrics: some metrics that are being displayed in the tool, avg_sales contain yearly, monthly and weekly average sales of entire sales or for a particular item or shade. forecastTotalSales is the sum of forecasted sales for all products or either a particular item or shade, within the dateRange.
+      //               3. prophet_model_stats: the parameters used for fitting the sales data with Prophet model by Meta. holidays mentions days of importance, since we notice a spike in sales during these days. predictionPeriod is the number of days predicted by the model ahdead of the latest day in the input data.
+                    
+      //               Here's the input meta-data: ${JSON.stringify(metadata, null, 2)}
+
+      //               Focus on:
+      //               1. Key trends in the data
+      //               2. Anomalies or unexpected patterns
+      //               3. Business recommendations based on the metrics`;
+
+      const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity. 
                   Draw crucial insights from the metadata and relate this metadata with the geographical, economical and temporal (seasons, time of the year) knowledge to give a summary on your insights.
                   From your analytical insights, return what possible actions the sales manager at this firm should perform to improve the sales of this product. 
 
@@ -474,39 +522,22 @@
                     2. Anomalies or unexpected patterns
                     3. Business recommendations based on the metrics`;
 
-    try {
       const response = await fetch("http://localhost:8000/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: "system",
-              content: "You are a data analyst assistant...",
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
+          messages: [{ role: "user", content: prompt }],
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.detail || `HTTP error! status: ${response.status}`,
-        );
-      }
-
       const data = await response.json();
-      console.log("openrouter response: ", data);
-
-      return data.choices[0]?.message?.content || "No response from AI";
+      return data.choices[0]?.message?.content || "No analysis available";
     } catch (error) {
-      console.error("Error fetching LLM response:", error);
+      console.error("LLM Error:", error);
+      return "Unable to generate analysis at this time";
     }
   }
 </script>
@@ -538,21 +569,6 @@
         transition:blur
       >
         <div class="flex flex-col gap-1 p-2 w-full">
-          <!-- choose database -->
-          <!-- <select
-            bind:value={selectedDatabaseKey}
-            class="border rounded px-1 py-1 w-full transition-colors"
-          >
-            <option value="" disabled selected hidden>
-              "Select database"
-            </option>
-
-            <option value="wo_centro_prophet">Original Dataset</option>
-            <option value="non_zero_no_spikes_prophet"
-              >Dataset w/o Spikes</option
-            >
-          </select> -->
-
           <!-- Start date picker -->
           <div class="flex flex-row justify-between w-full">
             <!-- svelte-ignore a11y_consider_explicit_label -->
@@ -709,8 +725,29 @@
       {/each}
     </div>
 
-    <div class="col-span-2 card flex flex-col">
-      <span class="mt-5">Daily Sales</span>
+    <div
+      class="col-span-2 card flex flex-col"
+      class:row-start-1={expand_forecast}
+      class:row-end-3={expand_forecast}
+    >
+      <div
+        class="flex flex-row items-center justify-between w-full gap-0 px-10"
+      >
+        <span class="mt-5 text-center text-3xl">Daily Sales</span>
+        <button
+          class="z-100 p-0 cursor-pointer transition-transform duration-300 ease-in-out {expand_rotate
+            ? 'rotate-[360deg]'
+            : ''}"
+          on:click={() => (expand_rotate = !expand_rotate)}
+        >
+          <img
+            src="/chupps-white.svg"
+            alt=""
+            class="invert block h-auto mt-3"
+            style="width: 25px;"
+          />
+        </button>
+      </div>
       <div
         id="actual-plot"
         class="w-full h-full rounded-2xl overflow-hidden"
@@ -718,10 +755,14 @@
     </div>
 
     <div class="col-span-2 row-span-3 card flex flex-col">
-      <div class="flex flex-col items-center justify-center w-full gap-0">
-        <span class="mt-5 text-center">Forecasted Sales</span>
+      <div
+        class="flex flex-row items-center justify-between w-full gap-0 px-10"
+      >
+        <span class="mt-5 text-center align-middle text-3xl"
+          >Forecasted Sales</span
+        >
         <button
-          class="border h-fit rounded-lg px-1 py-1 text-xs flex flex-row gap-1 mt-auto hover:bg-gray-500 hover:text-white transition-all duration-300 ease-in-out"
+          class="z-100 flex mt-auto flex-row gap-2 items-center justify-center text-gray-500 hover:text-black shadow-none hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)] border border-gray-300 p-2 rounded-lg text-xs transition-all duration-300 ease-in-out"
           on:click={openSet}
         >
           <svg
@@ -744,7 +785,7 @@
       {#if !naData}
         <div
           id="forecast-plot"
-          class="w-full h-auto rounded-2xl overflow-auto"
+          class="w-full h-full rounded-2xl overflow-auto"
         ></div>
       {:else}
         <div
@@ -769,17 +810,54 @@
     </div>
 
     <div
-      class="card flex-col col-start-4 row-end-6 overflow-y-auto p-4 bg-white rounded shadow"
+      class="flex flex-col justify-start rounded-xl items-center shadow-xl h-full col-start-4 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
       class:row-start-1={!setOpen}
       class:row-start-2={setOpen}
     >
-      <span class="font-semibold text-base mb-2">AI Insights</span>
+      <span class="font-semibold text-lg">AI Insights</span>
+      <span class="font-semibold text-xs mb-2 text-red-500"
+        >Usage left: {llm_used}</span
+      >
 
-      <!-- Use a wrapper div and inject HTML using {@html ...} below -->
+      <button
+        class="flex flex-row gap-2 items-center justify-center text-gray-500 hover:text-black shadow-none hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)] border border-gray-300 p-2 rounded-lg text-xs transition-all duration-300 ease-in-out disabled:cursor-not-allowed"
+        disabled={isLLMthinking}
+        on:click={runLLM}
+        on:click={setLLM}
+      >
+        <img
+          width="20"
+          height="20"
+          src="https://img.icons8.com/ios-glyphs/30/bot.png"
+          alt="bot"
+          class="fill-current"
+        />
+
+        {#if !isLLMthinking}
+          <span>Run AI Analysis</span>
+        {:else}
+          <span class="animate-pulse">Thinking...</span>
+        {/if}
+      </button>
+
+      <div class="bg-gray-300 w-3/4 h-[2px] my-3 rounded-xl"></div>
+
       <div
-        class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose"
-      > 
-        {@html renderedMarkdown}
+        class="w-full h-full bg-gray-200 rounded-xl p-2 group hover:bg-gray-100 transition-all duration-100 ease-in-out overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+        class:animate-pulse={isLLMthinking}
+      >
+        <div
+          class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+        >
+          {@html renderedMarkdown}
+
+          {#if !isLLMon && !isLLMthinking}
+            <ul class="list-disc pl-10">
+              <li>Select item/shade and hit enter</li>
+              <li>Run AI Analysis to gain advanced insights!</li>
+            </ul>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
