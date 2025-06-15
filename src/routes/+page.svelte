@@ -7,7 +7,7 @@
 	import Home from "./Home.svelte";
 	import Data from "./Data.svelte";
 
-	let activeView = "forecast";
+	let activeView = "home";
 
 	function handleView(view) {
 		activeView = view;

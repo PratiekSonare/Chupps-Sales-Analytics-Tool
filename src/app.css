@@ -23,7 +23,7 @@ html, body {
 	--column-width: 42rem;
 	/* --column-margin-top: 4rem; */
 	font-family: "DM Sans", sans-serif;
-	font-weight: 200;
+	font-weight: 900;
 	font-style: normal;
 	color: var(--color-text);
 }
@@ -34,6 +34,25 @@ html, body {
 	font-style: normal;
 }
 
+.textl {
+	font-family: "DM Sans", sans-serif;
+	font-weight: 400;
+	font-style: normal;
+}
+
+.text2 {
+  font-family: "Raleway", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.text2b {
+  font-family: "Raleway", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
 body {
 	margin: 0;
 	background-attachment: fixed;

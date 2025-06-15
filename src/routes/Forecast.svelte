@@ -5,8 +5,8 @@
 
   import { blur } from "svelte/transition";
   import { format } from "d3-format";
-  import AIBro from "./AIBro.svelte";
-    import ChuppsButton from "./ChuppsButton.svelte";
+  import ChuppsButton from "./ChuppsButton.svelte";
+    import CalculationPopup from "./CalculationPopup.svelte";
 
   const formatNumber = format(",");
 
@@ -27,6 +27,7 @@
   let dataToPlot = [];
 
   let naData = false;
+  let calculationOpen = false;
   let llm_used = 30;
 
   // Dropdown & calendar variables
@@ -43,6 +44,7 @@
   let monthly_avg_sales = 15578;
   let weekly_avg_sales = 3582;
   let yearly_avg_sales = 195370;
+  let percentage_growth = 137;
 
   let llm_response = "Select an item/shade and hit enter!"; // Better initial state
   let renderedMarkdown = "";
@@ -56,9 +58,11 @@
   let setOpen = true;
   let isLLMon = false;
   let isLLMthinking = false;
+  let expand_rotate = false;
   let expand_forecast = false;
 
   let item_sales_data = wo_centro_prophet;
+  let currentSalesData = wo_centro_prophet; // default (global data)
 
   $: formatted_total_sales = formatNumber(total_sales.toFixed(0));
   $: formatted_forecast_total_sales = formatNumber(
@@ -68,6 +72,7 @@
   $: formatted_monthly_avg_sales = formatNumber(monthly_avg_sales.toFixed(0));
   $: formatted_weekly_avg_sales = formatNumber(weekly_avg_sales.toFixed(0));
   $: formatted_yearly_avg_sales = formatNumber(yearly_avg_sales.toFixed(0));
+  // $: formatted_percentage_growth = formatNumber(percentage_growth);
 
   $: stats = [
     {
@@ -165,9 +170,7 @@
     forecast = await res.json();
     og_forecast = forecast;
 
-    console.log("forecast: ", forecast);
-
-    filteredForecast = filterForecast();
+    filteredForecast = filterForecast(startDate, endDate);
     plotForecast(filteredForecast);
   });
 
@@ -203,6 +206,7 @@
       );
 
       item_sales_data = await res2.json();
+      currentSalesData = item_sales_data;
     } catch (err) {
       console.error(`Failed to fetch sales data for item - ${item}:`, err);
     }
@@ -240,12 +244,13 @@
       );
 
       item_sales_data = await res2.json();
+      currentSalesData = item_sales_data;
     } catch (err) {
       console.error(`Failed to fetch sales data for item - ${shade}:`, err);
     }
   }
 
-  function filterForecast() {
+  function filterForecast(startDate, endDate) {
     if (!forecast.length) return [];
 
     return forecast.filter((d) => {
@@ -258,24 +263,51 @@
     });
   }
 
-  $: {
-    if (forecast_total_sales === 0) {
-      naData = true;
-      forecast_trend = "NO TREND";
-    } else {
-      naData = false;
-    }
+  function calculatePercentageGrowth(aggSourceData = currentSalesData) {
+    const agg_data = aggSourceData.map((row) => ({
+      ds: new Date(row.ds || row.purDate), // ensure correct date field
+      y: row.y || row.sales, // support both field names
+    }));
+
+    const custom_startDate = new Date("2025-04-01");
+    const custom_endDate = new Date("2026-03-01");
+
+    const filteredForecastGrowth = filterForecast(custom_startDate, custom_endDate);
+    console.log("filtered forecast:", filteredForecastGrowth);
+
+    const startDate_history = new Date("2024-03-01");
+    const endDate_history = new Date("2025-03-01");
+
+    const sales_2025 = agg_data
+      .filter((row) => row.ds >= startDate_history && row.ds < endDate_history)
+      .reduce((sum, row) => sum + row.y, 0);
+
+    const sales_2026 = filteredForecastGrowth.reduce(
+      (sum, d) => sum + d.yhat,
+      0,
+    );
+
+    const growth =
+      sales_2025 === 0 ? 0 : ((sales_2026 - sales_2025) / sales_2025) * 100;
+
+    console.log("2025 sales:", sales_2025);
+    console.log("2026 forecast:", sales_2026);
+    console.log("Growth (%):", growth.toFixed(2));
+
+    return growth;
   }
 
   function applyFilters() {
-    const filtered = filterForecast();
-    filteredForecast = filterForecast();
+    const filtered = filterForecast(startDate, endDate);
+    filteredForecast = filterForecast(startDate, endDate);
 
     //total sales for timeframe
     forecast_total_sales = filteredForecast.reduce((sum, d) => sum + d.yhat, 0);
 
-    // Reset naData based on current data
-    naData = forecast_total_sales === 0;
+    if (forecast_total_sales === 0) {
+      naData = true;
+      forecast_trend = "NO TREND";
+    }
 
     //avg sales calculation
     const msDiff = new Date(endDate).getTime() - new Date(startDate).getTime();
@@ -293,7 +325,7 @@
     const lastTrend = forecast[forecast.length - 1]?.trend ?? 0;
 
     if (yearly_avg_sales === 0) {
-      forecast_trend = "NO TREND"; // Fixed: changed == to = and fixed typo
+      forecast_trend = "NO TREND";
     } else {
       forecast_trend = lastTrend > firstTrend ? "Upward" : "Downward";
     }
@@ -301,9 +333,10 @@
     console.log("firstTrend: ", firstTrend);
     console.log("lastTrend: ", lastTrend);
 
+    percentage_growth = calculatePercentageGrowth();
+
     //call plotting of forecast
-    if (filtered.length && !naData) {
-      // Only plot if we have data and it's not NA
+    if (filtered.length) {
       plotForecast(filtered);
     }
   }
@@ -312,7 +345,7 @@
     startDate = "2025-03-01";
     endDate = "2026-02-01";
 
-    const filtered = filterForecast();
+    const filtered = filterForecast(startDate, endDate);
     if (filtered.length) {
       plotForecast(filtered);
     }
@@ -323,9 +356,8 @@
     item_sales_data = wo_centro_prophet;
     item_name = "";
     shade_name = "";
-    naData = false;
 
-    const filtered = filterForecast();
+    const filtered = filterForecast(startDate, endDate);
     if (filtered.length) {
       plotForecast(filtered);
     }
@@ -526,8 +558,9 @@
                     Here's the input meta-data: ${JSON.stringify(metadata, null, 2)}
 
                     Focus on:
-                    1. Business recommendations based on the metrics
-                    2. Mention and compare these sales with potential competitor brands in India`;
+                    1. Key trends in the data
+                    2. Anomalies or unexpected patterns
+                    3. Business recommendations based on the metrics`;
 
       const response = await fetch("http://localhost:8000/api/chat", {
         method: "POST",
@@ -549,24 +582,81 @@
   }
 </script>
 
+{#if calculationOpen}
+  <CalculationPopup bind:calculationOpen />
+{/if}
+
 <div class="w-screen h-screen">
   <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr_1fr] gap-3 h-full p-2">
-    <div class="card flex flex-col p-0">
-      <span>Total Pairs Sold</span>
-      <span class="text-gray-400 text-[10px] -mt-1">(All Time)</span>
-      <span class="text-4xl text-black">{formatted_total_sales}</span>
+    <div class="card flex flex-col p-2">
+      <span class="text-xl mt-auto">Total Pairs Sold</span>
+      <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
+      <span class="text-5xl text-black my-auto">{formatted_total_sales}</span>
     </div>
 
     <div class="card flex flex-col p-2">
-      <span>Total Revenue Generated</span>
-      <span class="text-gray-400 text-[10px] -mt-1">(All Time)</span>
-      <span class="text-4xl text-black">{formatted_total_revenue}</span>
+      <span class="text-xl mt-auto">Total Revenue Generated</span>
+      <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
+      <span class="text-5xl text-black my-auto">{formatted_total_revenue}</span>
     </div>
 
-    <div class="card flex flex-col p-2">
-      <span>Total Parties Served</span>
-      <span class="text-gray-400 text-[10px] -mt-1">(All Time)</span>
-      <span class="text-4xl text-black">{total_parties}</span>
+    <div class="flex flex-row gap-3">
+      <div class="card flex flex-col p-2">
+        <span class="text-xl mt-auto">Total Parties</span>
+        <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
+        <span class="text-5xl text-black my-auto">{total_parties}</span>
+      </div>
+      <div
+        class="card-growth flex flex-col p-2"
+        class:bg-green-300={percentage_growth > 0}
+        class:bg-red-300={percentage_growth < 0}
+      >
+        <div class="flex flex-col mt-auto gap-0 items-center">
+          <span class="text-xl mt-auto">Growth</span>
+          <!-- svelte-ignore a11y_consider_explicit_label -->
+          <button
+          on:click={() => calculationOpen = !calculationOpen}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              x="0px"
+              y="0px"
+              width="12"
+              height="12"
+              class="fill-current"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M 12 2 C 6.4889971 2 2 6.4889971 2 12 C 2 17.511003 6.4889971 22 12 22 C 17.511003 22 22 17.511003 22 12 C 22 6.4889971 17.511003 2 12 2 z M 12 4 C 16.430123 4 20 7.5698774 20 12 C 20 16.430123 16.430123 20 12 20 C 7.5698774 20 4 16.430123 4 12 C 4 7.5698774 7.5698774 4 12 4 z M 11 7 L 11 9 L 13 9 L 13 7 L 11 7 z M 11 11 L 11 17 L 13 17 L 13 11 L 11 11 z"
+              ></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex flex-row gap-2 items-center my-auto">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            fill="currentColor"
+            class="bi bi-caret-up-fill"
+            class:text-green-600={percentage_growth > 0}
+            class:text-red-600={percentage_growth < 0}
+            class:rotate-180={percentage_growth < 0}
+            viewBox="0 0 16 16"
+          >
+            <path
+              d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"
+            />
+          </svg>
+          <span
+            class="text-5xl text-black"
+            class:text-green-600={percentage_growth > 0}
+            class:text-red-600={percentage_growth < 0}
+            >{percentage_growth.toFixed(1)}<span class="text-base ml-1">%</span
+            ></span
+          >
+        </div>
+      </div>
     </div>
 
     <!-- <span>Settings</span> -->
@@ -737,9 +827,13 @@
       class:row-start-1={expand_forecast}
       class:row-end-3={expand_forecast}
     >
-      <div class="flex flex-row items-center justify-start w-full gap-5 px-10">
-        <ChuppsButton />
-        <span class="mt-5 text-center text-3xl">Daily Sales</span>
+      <div
+        class="flex flex-row items-center justify-between w-full gap-0 px-10"
+      >
+        <div class="flex flex-row gap-5">
+          <ChuppsButton />
+          <span class="mt-5 text-center text-3xl">Daily Sales</span>
+        </div>
       </div>
       <div
         id="actual-plot"
@@ -751,7 +845,7 @@
       <div
         class="flex flex-row items-center justify-between w-full gap-0 px-10"
       >
-        <div class="flex flex-row items-center justify-start w-full gap-5">
+        <div class="flex flex-row gap-5">
           <ChuppsButton />
           <span class="mt-5 text-center align-middle text-3xl"
             >Forecasted Sales</span
@@ -863,12 +957,16 @@
   @reference "tailwindcss";
 
   .card {
-    @apply bg-white w-full h-full rounded-lg flex items-center justify-center shadow-xl;
+    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start shadow-xl;
   }
   .card-alt {
     @apply bg-transparent w-full h-full rounded-lg flex items-center justify-center;
   }
   .card-alt2 {
     @apply bg-white w-full h-full rounded-lg flex items-center justify-start shadow-xl;
+  }
+
+  .card-growth {
+    @apply w-full h-full rounded-lg flex items-center justify-start shadow-xl;
   }
 </style>

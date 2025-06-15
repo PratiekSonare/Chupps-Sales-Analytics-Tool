@@ -223,7 +223,7 @@ def forecast_shade_wise(shade_name: str = Path(...), req: ForecastRequestItem = 
 
         future = model.make_future_dataframe(periods=365)
         forecast = model.predict(future)
-
+        
         result = forecast[['ds', 'yhat', 'yhat_lower',
                            'yhat_upper', 'trend']].to_dict(orient='records')
         return result
