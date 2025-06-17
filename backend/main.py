@@ -8,9 +8,9 @@ from typing import List, Dict, Optional
 from prophet import Prophet
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import json 
+import json
 
-load_dotenv(".env.local") 
+load_dotenv(".env.local")
 
 
 app = FastAPI()
@@ -223,7 +223,7 @@ def forecast_shade_wise(shade_name: str = Path(...), req: ForecastRequestItem = 
 
         future = model.make_future_dataframe(periods=365)
         forecast = model.predict(future)
-        
+
         result = forecast[['ds', 'yhat', 'yhat_lower',
                            'yhat_upper', 'trend']].to_dict(orient='records')
         return result
@@ -243,48 +243,6 @@ class ChatRequest(BaseModel):
     messages: List[Message]
     model: Optional[str] = "deepseek/deepseek-r1-0528:free"
 
-
-# @app.post("/api/chat")
-# async def chat_with_ai(request: ChatRequest):
-
-#     print('llm response called main.py')
-#     """
-#     Proxy request to OpenRouter AI
-#     Expected request body:
-#     {
-#         "messages": [
-#             {"role": "user", "content": "Your message here"}
-#         ],
-#         "model": "optional-model-name"
-#     }
-#     """
-#     try:
-#         print('checking api key existence.')
-#         api_key = os.getenv("OPENROUTER_KEY")
-#         print("apikey: ", api_key)
-#         if not api_key:
-#             print("OpenRouter API key not found in environment variables.")
-
-#         # Forward the exact request to OpenRouter
-#         response = requests.post(
-#             url="https://openrouter.ai/api/v1/chat/completions",
-#             headers={
-#                 "Authorization": f"Bearer {api_key}",
-#                 "Content-Type": "application/json",
-#                 "HTTP-Referer": "http://localhost:8000",  # Required by OpenRouter
-#                 "X-Title": "Sales Dashboard",             # Required by OpenRouter
-#             },
-#             json={
-#                 "model": request.model,
-#                 "messages": [msg.dict() for msg in request.messages]
-#             },
-#             timeout=30
-#         )
-#         response.raise_for_status()
-#         # print("response main.py: ", )
-#         return response.json()
-#     except requests.exceptions.RequestException as e:
-#         print('request not made to openrouter.')
 
 @app.post("/api/chat")
 async def chat_with_ai(request: ChatRequest):
@@ -320,6 +278,53 @@ async def chat_with_ai(request: ChatRequest):
 
         response.raise_for_status()
         print('backend llm response: ', response)
+        return response.json()
+
+    except requests.exceptions.RequestException as e:
+        error_detail = f"OpenRouter request failed: {str(e)}"
+        if hasattr(e, 'response') and e.response:
+            error_detail += f" - Response: {e.response.text}"
+        print(error_detail)
+        raise HTTPException(status_code=502, detail=error_detail)
+
+# GOOGLE Gemma 3 - Graph Analysis
+@app.post("/api/imgchat")
+async def chat_with_ai(request: ChatRequest):
+    print('LLM endpoint called')
+
+    api_key = os.getenv("OPENROUTER_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=500, detail="OpenRouter API key missing")
+
+    try:
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": "Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps({
+                "model": "google/gemma-3-27b-it:free",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is in this image?"
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+                                }
+                            }
+                        ]
+                    }
+                ],
+            })
+        )
         return response.json()
 
     except requests.exceptions.RequestException as e:

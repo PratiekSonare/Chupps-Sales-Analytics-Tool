@@ -6,7 +6,7 @@
   import { blur } from "svelte/transition";
   import { format } from "d3-format";
   import ChuppsButton from "./ChuppsButton.svelte";
-    import CalculationPopup from "./CalculationPopup.svelte";
+  import CalculationPopup from "./CalculationPopup.svelte";
 
   const formatNumber = format(",");
 
@@ -31,8 +31,8 @@
   let llm_used = 30;
 
   // Dropdown & calendar variables
-  let startDate = "2024-04-01";
-  let endDate = "2025-02-01";
+  let startDate = "2025-03-01";
+  let endDate = "2026-02-01";
   let maxEntry = 0;
   let max_sales_day = 0;
   let firstTrend = 0;
@@ -74,6 +74,12 @@
   $: formatted_yearly_avg_sales = formatNumber(yearly_avg_sales.toFixed(0));
   // $: formatted_percentage_growth = formatNumber(percentage_growth);
 
+  // Get all unique years from the data
+  let years = [];
+  let numberOfYears = 0;
+  let historicalTotalSales = 0;
+  let historical_avg = 0;
+
   $: stats = [
     {
       title: "Expected Total Sales",
@@ -94,10 +100,6 @@
     {
       title: "Trend",
       value: forecast_trend,
-    },
-    {
-      title: "Params...",
-      value: 1000,
     },
   ];
 
@@ -140,7 +142,7 @@
 
         // Get LLM response (with error handling)
         const response = await getLLMResponse(curr_metadata);
-        console.log("llm_response: ", response);
+        // console.log("llm_response: ", response);
 
         renderedMarkdown = marked(response || "Could not generate insights");
       } catch (error) {
@@ -272,8 +274,10 @@
     const custom_startDate = new Date("2025-04-01");
     const custom_endDate = new Date("2026-03-01");
 
-    const filteredForecastGrowth = filterForecast(custom_startDate, custom_endDate);
-    console.log("filtered forecast:", filteredForecastGrowth);
+    const filteredForecastGrowth = filterForecast(
+      custom_startDate,
+      custom_endDate,
+    );
 
     const startDate_history = new Date("2024-03-01");
     const endDate_history = new Date("2025-03-01");
@@ -307,7 +311,25 @@
     if (forecast_total_sales === 0) {
       naData = true;
       forecast_trend = "NO TREND";
+    } else {
+      naData = false;
     }
+
+    historicalTotalSales = currentSalesData.reduce(
+      (sum, d) => sum + d.y,
+      0,
+    );
+    years = [
+      ...new Set(currentSalesData.map((d) => new Date(d.ds).getFullYear())),
+    ];
+    numberOfYears = years.length;
+
+    historical_avg = numberOfYears > 0 ? historicalTotalSales / numberOfYears : 0;
+    console.log("historical average of given item: ", historical_avg);
+
+    // Generate appropriate metadata
+    const curr_metadata = generateMetadata();
+    console.log("curr_metadata: ", curr_metadata);
 
     //avg sales calculation
     const msDiff = new Date(endDate).getTime() - new Date(startDate).getTime();
@@ -485,6 +507,7 @@
   function generateMetadata() {
     const isFiltered = item_name || shade_name;
     const filteredData = isFiltered ? item_sales_data : wo_centro_prophet;
+    const originalData = wo_centro_prophet;
     const currentForecast = isFiltered ? forecast : og_forecast;
 
     return {
@@ -498,51 +521,31 @@
         end: endDate,
       },
       statistics: {
-        totalSales: currentForecast.reduce((sum, d) => sum + d.yhat, 0),
-        trend: forecast_trend,
-        dataPoints: filteredData.length,
-        forecastPoints: currentForecast.length,
-        averages: {
+        forecastTotalSales: currentForecast.reduce((sum, d) => sum + d.yhat, 0),
+        forecast_averages: {
           daily: weekly_avg_sales / 7,
           weekly: weekly_avg_sales,
           monthly: monthly_avg_sales,
           yearly: yearly_avg_sales,
         },
+        historicalTotalSales: historicalTotalSales,
+        historical_averages: {
+          yearly: historical_avg,
+        },
+        trend: forecast_trend,
+        dataPoints: filteredData.length,
+        forecastPoints: currentForecast.length,
       },
       modelDetails: {
         type: "Prophet",
         seasonality: "yearly",
         holidaysIncluded: true,
-        confidenceInterval: 80, //%
       },
-      // Add any other relevant data
-      rawSample: isFiltered
-        ? filteredData.slice(0, 5) // Sample of filtered data
-        : wo_centro_prophet.slice(0, 5), // Sample of all data
     };
   }
 
   async function getLLMResponse(metadata) {
     try {
-      // const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity.
-      //             Draw crucial insights from the metadata and relate this metadata with the geographical, economical and temporal (seasons, time of the year) knowledge to give a summary on your insights.
-      //             From your analytical insights, return what possible actions the sales manager at this firm should perform to improve the sales of this product.
-
-      //             Some background/domain about the brand with the sales: The sales belong to a budding open footwear brand in India. The brand currently operates on a distributor model, with major distributors across India ordering footwear in bulk at a time.
-      //             Recently, they have also started online marketplace and offline store based sales. The input data to the forecasting model contains this data.
-
-      //             Now, some background/domain about the metadata that is being provided to you:
-      //               1. filters: specifies the item or shade used to filter and display sales and forecasted data belonging to that item or shade. it also includes date filtering, that you musst take into account while analyzing. If aggregationLevel is 'All Products', that means the meta-data belongs to total sales record, otherwise it is for a particular item or a shade. dateRange is the range of dates used to filter display data for.
-      //               2. metrics: some metrics that are being displayed in the tool, avg_sales contain yearly, monthly and weekly average sales of entire sales or for a particular item or shade. forecastTotalSales is the sum of forecasted sales for all products or either a particular item or shade, within the dateRange.
-      //               3. prophet_model_stats: the parameters used for fitting the sales data with Prophet model by Meta. holidays mentions days of importance, since we notice a spike in sales during these days. predictionPeriod is the number of days predicted by the model ahdead of the latest day in the input data.
-
-      //               Here's the input meta-data: ${JSON.stringify(metadata, null, 2)}
-
-      //               Focus on:
-      //               1. Key trends in the data
-      //               2. Anomalies or unexpected patterns
-      //               3. Business recommendations based on the metrics`;
-
       const prompt = `You are a data analyst assistant skilled at interpreting sales dashboards and sales metadata. I am providing to you metadata pertaining to sales data of a footwear brand from India. This data has been used to forecast sales for the next 365 days using the Prophet model, with yearly seasonlity. 
                   Draw crucial insights from the metadata and relate this metadata with the geographical, economical and temporal (seasons, time of the year) knowledge to give a summary on your insights.
                   From your analytical insights, return what possible actions the sales manager at this firm should perform to improve the sales of this product. 
@@ -557,10 +560,37 @@
                     
                     Here's the input meta-data: ${JSON.stringify(metadata, null, 2)}
 
+                    Give directional insights, not based just a summary on the metadata but insights based on external knowledge.
+
                     Focus on:
-                    1. Key trends in the data
-                    2. Anomalies or unexpected patterns
-                    3. Business recommendations based on the metrics`;
+                    1. Business recommendations based on the metrics
+                    2. Directional insights based on external knowledge on time, India and open footwear
+                    
+                    Give a brief summary in under 500 words only.`;
+
+      const alt_prompt = `
+          **Role**: You are a **strategic sales analyst** with deep expertise in:  
+            - Indian consumer behavior (geography, economics, culture)  
+            - Footwear industry trends (open footwear, seasonal demand, distribution models)  
+            - Forecasting-driven business actions (not just model stats, but what to *do* with them)  
+
+            **Task**: Analyze the metadata from a **Prophet-based sales forecast** for an Indian open-footwear brand and provide:  
+            1. **Strategic insights** (combining metadata + external knowledge)  
+            2. **Concrete actions** for the sales manager (prioritized by impact)  
+
+            ---  
+
+            **Metadata Background**:  The sales belong to a budding open footwear brand in India. The brand currently operates on a distributor model, with major distributors across India ordering footwear in bulk at a time.
+                  Recently, they have also started online marketplace and offline store based sales. The input data to the forecasting model contains this data.
+                  
+                  Now, some background/domain about the metadata that is being provided to you: 
+                    1. filters: specifies the item or shade used to filter and display sales and forecasted data belonging to that item or shade. it also includes date filtering, that you musst take into account while analyzing. If aggregationLevel is 'All Products', that means the meta-data belongs to total sales record, otherwise it is for a particular item or a shade. dateRange is the range of dates used to filter display data for.
+                    2. metrics: some metrics that are being displayed in the tool, avg_sales contain yearly, monthly and weekly average sales of entire sales or for a particular item or shade. forecastTotalSales is the sum of forecasted sales for all products or either a particular item or shade, within the dateRange.
+                    3. prophet_model_stats: the parameters used for fitting the sales data with Prophet model by Meta. holidays mentions days of importance, since we notice a spike in sales during these days. predictionPeriod is the number of days predicted by the model ahdead of the latest day in the input data.
+
+            **Input Metadata**:  ${JSON.stringify(metadata, null, 2)}
+        
+        `;
 
       const response = await fetch("http://localhost:8000/api/chat", {
         method: "POST",
@@ -569,7 +599,7 @@
           Accept: "application/json",
         },
         body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content: alt_prompt }],
         }),
       });
 
@@ -580,6 +610,7 @@
       return "Unable to generate analysis at this time";
     }
   }
+
 </script>
 
 {#if calculationOpen}
@@ -587,7 +618,7 @@
 {/if}
 
 <div class="w-screen h-screen">
-  <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr_1fr] gap-3 h-full p-2">
+  <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr_1fr] gap-3 h-full p-5">
     <div class="card flex flex-col p-2">
       <span class="text-xl mt-auto">Total Pairs Sold</span>
       <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
@@ -614,8 +645,7 @@
         <div class="flex flex-col mt-auto gap-0 items-center">
           <span class="text-xl mt-auto">Growth</span>
           <!-- svelte-ignore a11y_consider_explicit_label -->
-          <button
-          on:click={() => calculationOpen = !calculationOpen}>
+          <button on:click={() => (calculationOpen = !calculationOpen)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               x="0px"
@@ -777,7 +807,7 @@
 
     <div class="card-alt2 col-start-3 row-start-3 flex-col w-full h-full">
       <div class="flex flex-col justify-center items-center my-5">
-        <span class="">Data Statistics</span>
+        <span class="">Forecast Statistics</span>
         <span class="text-gray-400 text-[10px] -mt-1"
           >(in the selected timeframe)</span
         >
@@ -806,7 +836,7 @@
     </div>
 
     <div
-      class="card-alt2 col-start-3 row-start-4 row-end-6 flex-col w-full h-full"
+      class="card-alt2 col-start-3 row-start-4 row-span-2 flex-col w-full h-full"
     >
       <span class="mt-2">Forecast Details</span>
       {#each details as stat, i}
@@ -906,7 +936,7 @@
     >
       <span class="font-semibold text-lg">AI Insights</span>
       <span class="font-semibold text-xs mb-2 text-red-500"
-        >Usage left: {llm_used}</span
+        >Usage limit: {llm_used}</span
       >
 
       <button
@@ -921,6 +951,7 @@
           src="https://img.icons8.com/ios-glyphs/30/bot.png"
           alt="bot"
           class="fill-current"
+          class:animate-pulse={isLLMthinking}
         />
 
         {#if !isLLMthinking}
@@ -957,16 +988,16 @@
   @reference "tailwindcss";
 
   .card {
-    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start shadow-xl;
+    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start shadow-xl border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
   }
   .card-alt {
-    @apply bg-transparent w-full h-full rounded-lg flex items-center justify-center;
+    @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-transparent w-full h-full rounded-lg flex items-center justify-center border border-gray-300;
   }
   .card-alt2 {
-    @apply bg-white w-full h-full rounded-lg flex items-center justify-start shadow-xl;
+    @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-white w-full h-full rounded-lg flex items-center justify-start shadow-xl border border-gray-300;
   }
 
   .card-growth {
-    @apply w-full h-full rounded-lg flex items-center justify-start shadow-xl;
+    @apply w-full h-full rounded-lg flex items-center justify-start shadow-xl border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
   }
 </style>

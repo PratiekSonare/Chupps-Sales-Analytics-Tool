@@ -13,6 +13,7 @@ export const load: PageServerLoad = async () => {
   const { data: chupps_sales, error: err2 } = await supabase.from('total_sales').select('sales');
   const { data: chupps_revenue, error: err4 } = await supabase.from('total_revenue').select('revenue');
   const { data: chupps_parties, error: err5 } = await supabase.from('total_parties').select('');
+  const { data: itemFilteredDB, error: err10 } = await supabase.from('chupps_23_25_full').select('item', {count: 'exact'}).order('item', {ascending: true});
 
   if (err1 || err2 || err3) {
     console.error('Supabase error:', err1 || err2 || err3);
@@ -28,6 +29,6 @@ export const load: PageServerLoad = async () => {
   const chupps_shades = chupps_shades_noSort;
 
   return {
-    wo_centro_prophet, chupps_23_25_full, total_sales, total_revenue, total_parties, chupps_items, chupps_shades
+    wo_centro_prophet, chupps_23_25_full, total_sales, total_revenue, total_parties, chupps_items, chupps_shades, itemFilteredDB
   };
 };
