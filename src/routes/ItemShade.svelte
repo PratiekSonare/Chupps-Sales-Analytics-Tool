@@ -1,12 +1,16 @@
-<script>
+<script lang="ts">
 	import { GoTrueClient } from "@supabase/supabase-js";
 	import { supabase } from "../lib/supabaseClient";
 	import shadeHexMap from "../lib/shade_hex_map.json";
+
+	export let chupps_23_25_full;
+	export let itemFilteredDB;
+
 	import { onMount } from "svelte";
 	let items = [];
-	let selectedItem = "";
+	let selectedItem = "CHUPPS X MI LEGACY";
 	let shades = [];
-	let selectedShade = "";
+	let selectedShade = "BLUE";
 	let sku = "";
 	let images = [];
 	let loading = 0;
@@ -32,6 +36,66 @@
 		if (!error) {
 			items = [...new Set(data.map((row) => row.item))];
 		}
+
+		const tableData = {
+			type: "table",
+			header: {
+				values: [
+					"Date",
+					"Party",
+					"Item",
+					"Gender",
+					"SKU",
+					"Shade",
+					"Sales",
+					"Size",
+					"Party Category",
+					"Mode",
+					"Location",
+					"Zone",
+					"State",
+				],
+				align: "center",
+				line: { width: 1, color: "black" },
+				fill: { color: "lightgray" },
+				font: { family: "Arial", size: 12, color: "black" },
+			},
+			cells: {
+				values: [
+					chupps_23_25_full.map((d) => d.purDate.split("T")[0]),
+					chupps_23_25_full.map((d) => d.party),
+					chupps_23_25_full.map((d) => d.item),
+					chupps_23_25_full.map((d) => d.gender),
+					chupps_23_25_full.map((d) => d.sku),
+					chupps_23_25_full.map((d) => d.shade),
+					chupps_23_25_full.map((d) => d.sales),
+					chupps_23_25_full.map((d) => d.size),
+					chupps_23_25_full.map((d) => d.party_category),
+					chupps_23_25_full.map((d) => d.mode),
+					chupps_23_25_full.map((d) => d.location),
+					chupps_23_25_full.map((d) => d.zone),
+					chupps_23_25_full.map((d) => d.state),
+				],
+				align: "center",
+				line: { color: "black", width: 1 },
+				font: { family: "Arial", size: 11, color: ["black"] },
+				height: 24,
+			},
+		};
+
+		(window as any).Plotly.newPlot(
+			"sales-table",
+			[tableData],
+			{
+				margin: { t: 10, b: 10, l: 20, r: 20 },
+				paper_bgcolor: "rgba(0,0,0,0)",
+				plot_bgcolor: "rgba(0,0,0,0)",
+			},
+			{
+				displayModeBar: false,
+				responsive: true,
+			},
+		);
 	});
 
 	// Watch for selectedItem change and load matching shades
@@ -133,6 +197,21 @@
 		const data = await res.json();
 		return data.link; // usable temporary URL
 	}
+
+	function plotForecast() {
+		// const trace1 = {
+		// 	x: dataToPlot.map((d) => d.ds),
+		// 	y: dataToPlot.map((d) => d.yhat),
+		// 	mode: "lines",
+		// 	name: "Forecast",
+		// };
+		// const layout = {
+		// 	title: "Forecast",
+		// 	margin: { t: 50, l: 50, r: 50, b: 50 },
+		// 	xaxis: { title: "Date" },
+		// 	yaxis: { title: "Sales" },
+		// };
+	}
 </script>
 
 <div class="w-screen h-screen">
@@ -223,7 +302,9 @@
 							Select a preferred Item/Shade combination!
 						</p>
 					{:else if loading === 1}
-						<div class="flex flex-col mt-10 gap-5 items-center justify-center">
+						<div
+							class="flex flex-col mt-10 gap-5 items-center justify-center"
+						>
 							<div
 								class="w-12 h-12 border-4 border-blue-400 border-dashed rounded-full animate-spin"
 							></div>
@@ -237,9 +318,13 @@
 				</div>
 			</div>
 		</div>
+
 		<div
-			class="col-start-2 col-span-2 row-start-0 row-span-2 bg-white rounded-xl shadow-xl border border-gray-300"
-		></div>
+			class="col-start-2 p-5 col-span-2 row-start-0 row-span-2 bg-white rounded-xl shadow-xl border border-gray-300"
+		>
+			<span class="text-4xl">Sales Data</span>
+			<div id="sales-table" class="w-full h-full"></div>
+		</div>
 		<div
 			class="col-start-2 col-span-2 row-start-3 row-span-2 bg-white rounded-xl shadow-xl border border-gray-300"
 		></div>

@@ -35,7 +35,7 @@
 		{:else if activeView === "data"}
 			<Data />
 		{:else if activeView === "item-shade"}
-			<ItemShade {itemFilteredDB} />
+			<ItemShade {itemFilteredDB} {chupps_23_25_full} />
 		{:else if activeView === "regional"}
 			<Regional />
 		{:else if activeView === "forecast"}

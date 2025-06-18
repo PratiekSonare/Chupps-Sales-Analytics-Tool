@@ -1,14 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { marked } from "marked";
-  import SvelteMarkdown from "svelte-markdown";
-
   import { blur } from "svelte/transition";
   import { format } from "d3-format";
   import ChuppsButton from "./ChuppsButton.svelte";
   import CalculationPopup from "./CalculationPopup.svelte";
-  import type { RootRaws } from "postcss/lib/root";
-
   const formatNumber = format(",");
 
   export let wo_centro_prophet;
