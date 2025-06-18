@@ -1,10 +1,13 @@
 
 import requests
 import os
+import io
 from fastapi import FastAPI, Request, Path
 from pydantic import BaseModel
 import pandas as pd
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
+import plotly.graph_objects as go
+import base64
 from prophet import Prophet
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -287,22 +290,87 @@ async def chat_with_ai(request: ChatRequest):
         print(error_detail)
         raise HTTPException(status_code=502, detail=error_detail)
 
+
+class ImgChatRequest(BaseModel):
+    # Fields from ChatRequest
+    message: Union[str, None] = None
+    image_url: Union[str, None] = None
+
+    # Fields from ForecastRequest
+    data: list  # Your time series data
+    # Add other forecast parameters as needed
+
+
 # GOOGLE Gemma 3 - Graph Analysis
 @app.post("/api/imgchat")
-async def chat_with_ai(request: ChatRequest):
+async def image_with_ai(request: ImgChatRequest):
     print('LLM endpoint called')
 
+    df = pd.DataFrame(request.data)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=df['ds'],
+        y=df['yhat'],
+        mode="lines",
+        name="Forecast",
+        line=dict(color='blue'),
+        showlegend=True
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=df['ds'],
+        y=df['yhat_upper'],
+        mode="lines",
+        name="Max. Sales",
+        showlegend=True
+    ))
+
+    # Trend line (trace3)
+    fig.add_trace(go.Scatter(
+        x=df['ds'],
+        y=df['trend'],
+        mode="lines",
+        line=dict(width=2),
+        name="Trend",
+        showlegend=True
+    ))
+
+    # Layout matching your frontend
+    fig.update_layout(
+        title="Forecast",
+        margin=dict(t=50, l=50, r=50, b=50),
+        xaxis_title="Date",
+        yaxis_title="Sales"
+    )
+
+    # Convert figure to base64
+    img_buffer = io.BytesIO()
+    fig.write_image(img_buffer, format="png")
+    img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+    
     api_key = os.getenv("OPENROUTER_KEY")
     if not api_key:
         raise HTTPException(
             status_code=500, detail="OpenRouter API key missing")
 
+    user_message = """You are a skilled data analyst that is experienced in analyzing sales forecasted charts. 
+                      Analyze this time series sales forecasting graph for an open footwear brand in India. 
+                      Give detailed analysis based on the images of the three lines displayed in the image. 
+                      Prophet model by Meta was used for forecasting of this sales data with yearly seasonality.
+                      Give insights on the graph observations, avoid talking about the prophet model and the lines, rather talk about what the graph could mean for sales of footwear in India. 
+                      Relate this sales to the geological, tropical and potential customers that we can reach out to in India, preferably metro cities.
+                      The blue line is the forecasted sales, the red line is the maximum expected sales and the green line is the trend of sales. Be concise."""
+
     try:
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": "Bearer {api_key}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:8000",
+                "X-Title": "Sales Dashboard",
             },
             data=json.dumps({
                 "model": "google/gemma-3-27b-it:free",
@@ -312,12 +380,12 @@ async def chat_with_ai(request: ChatRequest):
                         "content": [
                             {
                                 "type": "text",
-                                "text": "What is in this image?"
+                                "text": user_message
                             },
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+                                    "url": f"data:image/png;base64, {img_base64}"
                                 }
                             }
                         ]

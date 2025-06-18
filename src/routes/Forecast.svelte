@@ -7,6 +7,7 @@
   import { format } from "d3-format";
   import ChuppsButton from "./ChuppsButton.svelte";
   import CalculationPopup from "./CalculationPopup.svelte";
+  import type { RootRaws } from "postcss/lib/root";
 
   const formatNumber = format(",");
 
@@ -39,15 +40,20 @@
   let lastTrend = 0;
   let forecast_trend = "Upward";
 
-  //from 2024-04-01 to 2025-02-01
-  let forecast_total_sales = 156596;
-  let monthly_avg_sales = 15578;
-  let weekly_avg_sales = 3582;
-  let yearly_avg_sales = 195370;
-  let percentage_growth = 137;
+  //from 2025-03-01 to 2026-03-01
+  let forecast_total_sales = 458810;
+  let monthly_avg_sales = 41443;
+  let weekly_avg_sales = 9530;
+  let yearly_avg_sales = 497312;
+  let percentage_growth = 114.5;
+
+  let historicalTotalSales = 344390;
+  let historical_avg = 114797;
 
   let llm_response = "Select an item/shade and hit enter!"; // Better initial state
   let renderedMarkdown = "";
+  let renderedMarkdownGraph = "";
+  let activeButton = "data";
 
   if (yearly_avg_sales === 0) {
     forecast_trend = "NO TREND";
@@ -56,8 +62,12 @@
   let item_name = "";
   let shade_name = "";
   let setOpen = true;
+  let setGraph = false;
   let isLLMon = false;
   let isLLMthinking = false;
+  let isLLMthinkingGraph = false;
+  let graphAnDone = 0;
+  let anDone = 0;
   let expand_rotate = false;
   let expand_forecast = false;
 
@@ -73,12 +83,25 @@
   $: formatted_weekly_avg_sales = formatNumber(weekly_avg_sales.toFixed(0));
   $: formatted_yearly_avg_sales = formatNumber(yearly_avg_sales.toFixed(0));
   // $: formatted_percentage_growth = formatNumber(percentage_growth);
+  $: formatted_historial_total = formatNumber(historicalTotalSales.toFixed(0));
+  $: formatted_historical_yearly_avg_sales = formatNumber(
+    historical_avg.toFixed(0),
+  );
 
   // Get all unique years from the data
   let years = [];
   let numberOfYears = 0;
-  let historicalTotalSales = 0;
-  let historical_avg = 0;
+
+  $: history = [
+    {
+      title: "All-Time Sales",
+      value: formatted_historial_total,
+    },
+    {
+      title: "All-time Yearly Avg.",
+      value: formatted_historical_yearly_avg_sales,
+    },
+  ];
 
   $: stats = [
     {
@@ -93,21 +116,10 @@
       title: "Monthly Avg. Sales",
       value: formatted_monthly_avg_sales,
     },
-    {
-      title: "Weekly Avg. Sales",
-      value: formatted_weekly_avg_sales,
-    },
-    {
-      title: "Trend",
-      value: forecast_trend,
-    },
-  ];
-
-  $: details = [
-    {
-      title: "Period of forecast",
-      value: 365,
-    },
+    // {
+    //   title: "Trend",
+    //   value: forecast_trend,
+    // },
     {
       title: "Number of days forecasted",
       value: forecast.length,
@@ -128,6 +140,7 @@
       return;
     }
 
+    anDone = 0;
     isLLMthinking = true;
     llm_used = llm_used - 1;
 
@@ -152,7 +165,38 @@
           "Error generating insights. Please try again.",
         );
       } finally {
+        anDone = 1;
         isLLMthinking = false;
+      }
+    }
+  }
+
+  async function runLLMforGraph() {
+    if (llm_used <= 0) {
+      console.log("LLM usage limit reached");
+      return;
+    }
+
+    graphAnDone = 0;
+    isLLMthinkingGraph = true;
+    llm_used = llm_used - 1;
+
+    if (item_name || shade_name || (!item_name && !shade_name)) {
+      try {
+        const response = await getLLMReponseGraph();
+
+        renderedMarkdownGraph = marked(
+          response || "Could not generate insights",
+        );
+      } catch (error) {
+        console.error("Error generating insights:", error);
+        llm_response = "Error generating insights. Please try again.";
+        renderedMarkdownGraph = marked(
+          "Error generating insights. Please try again.",
+        );
+      } finally {
+        isLLMthinkingGraph = false;
+        graphAnDone = 1;
       }
     }
   }
@@ -271,12 +315,12 @@
       y: row.y || row.sales, // support both field names
     }));
 
-    const custom_startDate = new Date("2025-04-01");
-    const custom_endDate = new Date("2026-03-01");
+    const custom_startDate = new Date("2025-03-01");
+    const custom_endDate = new Date("2026-02-01");
 
     const filteredForecastGrowth = filterForecast(
-      custom_startDate,
-      custom_endDate,
+      startDate,
+      endDate,
     );
 
     const startDate_history = new Date("2024-03-01");
@@ -296,12 +340,19 @@
 
     console.log("2025 sales:", sales_2025);
     console.log("2026 forecast:", sales_2026);
+    console.log("startDate:", startDate);
+    console.log("endDate:", endDate);
     console.log("Growth (%):", growth.toFixed(2));
 
     return growth;
   }
 
   function applyFilters() {
+    anDone = 0;
+    graphAnDone = 0;
+    renderedMarkdown = "";
+    renderedMarkdownGraph = "";
+
     const filtered = filterForecast(startDate, endDate);
     filteredForecast = filterForecast(startDate, endDate);
 
@@ -315,16 +366,14 @@
       naData = false;
     }
 
-    historicalTotalSales = currentSalesData.reduce(
-      (sum, d) => sum + d.y,
-      0,
-    );
+    historicalTotalSales = currentSalesData.reduce((sum, d) => sum + d.y, 0);
     years = [
       ...new Set(currentSalesData.map((d) => new Date(d.ds).getFullYear())),
     ];
     numberOfYears = years.length;
 
-    historical_avg = numberOfYears > 0 ? historicalTotalSales / numberOfYears : 0;
+    historical_avg =
+      numberOfYears > 0 ? historicalTotalSales / numberOfYears : 0;
     console.log("historical average of given item: ", historical_avg);
 
     // Generate appropriate metadata
@@ -378,6 +427,13 @@
     item_sales_data = wo_centro_prophet;
     item_name = "";
     shade_name = "";
+    forecast_total_sales = 458810;
+    monthly_avg_sales = 41443;
+    weekly_avg_sales = 9530;
+    yearly_avg_sales = 497312;
+    percentage_growth = 114.5;
+    historicalTotalSales = 344390;
+    historical_avg = 114797;
 
     const filtered = filterForecast(startDate, endDate);
     if (filtered.length) {
@@ -416,18 +472,18 @@
       showlegend: true,
     };
 
-    const daily_sales_plot = {
-      x: item_sales_data.map((d) => d.ds),
-      y: item_sales_data.map((d) => d.y),
-      mode: "lines",
-      name: "Forecast",
-    };
-
     const layout = {
       title: "Forecast",
       margin: { t: 50, l: 50, r: 50, b: 50 },
       xaxis: { title: "Date" },
       yaxis: { title: "Sales" },
+    };
+
+    const daily_sales_plot = {
+      x: item_sales_data.map((d) => d.ds),
+      y: item_sales_data.map((d) => d.y),
+      mode: "lines",
+      name: "Forecast",
     };
 
     const layoutForecast = {
@@ -493,6 +549,10 @@
 
   function openSet() {
     setOpen = !setOpen;
+  }
+
+  function openGraphAn() {
+    setGraph = !setGraph;
   }
 
   function setLLM() {
@@ -589,7 +649,6 @@
                     3. prophet_model_stats: the parameters used for fitting the sales data with Prophet model by Meta. holidays mentions days of importance, since we notice a spike in sales during these days. predictionPeriod is the number of days predicted by the model ahdead of the latest day in the input data.
 
             **Input Metadata**:  ${JSON.stringify(metadata, null, 2)}
-        
         `;
 
       const response = await fetch("http://localhost:8000/api/chat", {
@@ -611,6 +670,44 @@
     }
   }
 
+  async function getLLMReponseGraph() {
+    filteredForecast = filterForecast(startDate, endDate);
+
+    const data = filteredForecast.map((row) => ({
+      ds: row.ds,
+      yhat: row.yhat,
+      yhat_upper: row.yhat_upper,
+      yhat_lower: row.yhat_lower,
+      trend: row.trend,
+    }));
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/imgchat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: data,
+          message: "Analyze this sales forecast graph", // Add default message
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const llm_response_for_img = await res.json();
+      console.log("graph llm response: ", llm_response_for_img);
+
+      return (
+        llm_response_for_img.choices?.[0]?.message?.content ||
+        llm_response_for_img.message ||
+        "No analysis available"
+      );
+    } catch (error) {
+      console.error(`Failed to call graph api:`, error);
+      return "Error analyzing graph data";
+    }
+  }
 </script>
 
 {#if calculationOpen}
@@ -789,7 +886,7 @@
           </div>
 
           <button
-            class="p-0 mt-1 border border-blue-500 rounded py-0 px-2 h-full hover:bg-blue-500 hover:text-white transition-all duration-300 ease-out"
+            class="p-0 mt-1 border border-blue-500 rounded py-0 px-2 h-full hover:bg-blue-500 text-gray-400 hover:text-white transition-all duration-300 ease-out"
             on:click={applyFilters}
             class:bg-blue-500={item_name !== "" || shade_name !== ""}
           >
@@ -805,13 +902,34 @@
       <div id="forecast-table" class="w-full h-full"></div>
     </div>
 
-    <div class="card-alt2 col-start-3 row-start-3 flex-col w-full h-full">
-      <div class="flex flex-col justify-center items-center my-5">
-        <span class="">Forecast Statistics</span>
+    <div
+      class="card-alt2 col-start-3 row-start-3 row-span-3 flex-col w-full h-full"
+    >
+      <div class="flex flex-col justify-center items-center mt-5">
+        <span class="">Data Statistics</span>
         <span class="text-gray-400 text-[10px] -mt-1"
           >(in the selected timeframe)</span
         >
       </div>
+
+      <!-- trend -->
+      <div
+        class="flex flex-row justify-between text-2xl w-full my-2 px-4 py-1 {forecast_trend ===
+        'Upward'
+          ? 'bg-green-400'
+          : 'bg-red-400'}"
+      >
+        <span class="text-white">Trend</span>
+        <span
+          class={forecast_trend === "Upward"
+            ? "text-green-600"
+            : "text-red-600"}>{forecast_trend}</span
+        >
+      </div>
+
+      <span class="self-start px-4 mt-1 text-lg border-y border-r rounded-r-xl"
+        >Forecast</span
+      >
       {#each stats as stat, i}
         <div
           class="flex flex-row justify-between items-center pt-1 border-b border-gray-400 rounded-r-xl w-11/12"
@@ -833,19 +951,27 @@
           </span>
         </div>
       {/each}
-    </div>
 
-    <div
-      class="card-alt2 col-start-3 row-start-4 row-span-2 flex-col w-full h-full"
-    >
-      <span class="mt-2">Forecast Details</span>
-      {#each details as stat, i}
+      <span class="self-start px-4 mt-1 text-lg border-y border-r rounded-r-xl"
+        >History</span
+      >
+      {#each history as stat, i}
         <div
           class="flex flex-row justify-between items-center pt-1 border-b border-gray-400 rounded-r-xl w-11/12"
-          class:border-b-0={i === details.length - 1}
+          class:border-b-0={i === history.length - 1}
         >
           <span class="text-base text-gray-500">{stat.title}</span>
-          <span class={`text-xl font-medium text-right mr-2`}>
+          <span
+            class={`text-xl font-medium text-right mr-2
+        ${
+          stat.title === "Trend"
+            ? stat.value === "Upward"
+              ? "text-green-500"
+              : "text-red-500"
+            : ""
+        }
+      `}
+          >
             {stat.value}
           </span>
         </div>
@@ -853,7 +979,7 @@
     </div>
 
     <div
-      class="col-span-2 card flex flex-col"
+      class="col-span-2 card-noclick flex flex-col"
       class:row-start-1={expand_forecast}
       class:row-end-3={expand_forecast}
     >
@@ -871,16 +997,18 @@
       ></div>
     </div>
 
-    <div class="col-span-2 row-span-3 card flex flex-col">
+    <div class="col-span-2 row-span-3 card-noclick flex flex-col">
       <div
         class="flex flex-row items-center justify-between w-full gap-0 px-10"
       >
         <div class="flex flex-row gap-5">
           <ChuppsButton />
+
           <span class="mt-5 text-center align-middle text-3xl"
             >Forecasted Sales</span
           >
         </div>
+
         <button
           class="z-100 flex mt-auto flex-row gap-2 items-center justify-center text-gray-500 hover:text-black shadow-none hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)] border border-gray-300 p-2 rounded-lg text-xs transition-all duration-300 ease-in-out"
           on:click={openSet}
@@ -934,51 +1062,128 @@
       class:row-start-1={!setOpen}
       class:row-start-2={setOpen}
     >
-      <span class="font-semibold text-lg">AI Insights</span>
+      <span class="font-semibold text-2xl ai-font">AI Insights</span>
       <span class="font-semibold text-xs mb-2 text-red-500"
         >Usage limit: {llm_used}</span
       >
+      <div class="flex flex-row gap-1">
+        <!-- DATA ANALYSIS BUTTON -->
+        <button
+          class={`flex flex-row gap-2 items-center justify-center border border-gray-300 p-2 rounded-lg text-xs transition-all duration-300 ease-in-out disabled:cursor-not-allowed ${
+            anDone === 1
+              ? activeButton === "data"
+                ? "bg-green-600 text-white hover:shadow-md"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+              : "text-gray-500 hover:text-black"
+          }`}
+          disabled={isLLMthinking}
+          on:click={() => {
+            activeButton = "data";
+            if (anDone !== 1) {
+              runLLM();
+              setLLM();
+            }
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 640 512"
+            class="fill-current"
+          >
+            <path
+              d="M320 0c17.7 0 32 14.3 32 32l0 64 120 0c39.8 0 72 32.2 72 72l0 272c0 39.8-32.2 72-72 72l-304 0c-39.8 0-72-32.2-72-72l0-272c0-39.8 32.2-72 72-72l120 0 0-64c0-17.7 14.3-32 32-32zM208 384c-8.8 0-16 7.2-16 16s7.2 16 16 16l32 0c8.8 0 16-7.2 16-16s-7.2-16-16-16l-32 0zm96 0c-8.8 0-16 7.2-16 16s7.2 16 16 16l32 0c8.8 0 16-7.2 16-16s-7.2-16-16-16l-32 0zm96 0c-8.8 0-16 7.2-16 16s7.2 16 16 16l32 0c8.8 0 16-7.2 16-16s-7.2-16-16-16l-32 0zM264 256a40 40 0 1 0 -80 0 40 40 0 1 0 80 0zm152 40a40 40 0 1 0 0-80 40 40 0 1 0 0 80zM48 224l16 0 0 192-16 0c-26.5 0-48-21.5-48-48l0-96c0-26.5 21.5-48 48-48zm544 0c26.5 0 48 21.5 48 48l0 96c0 26.5-21.5 48-48 48l-16 0 0-192 16 0z"
+            />
+          </svg>
+          <span>
+            {#if isLLMthinking}
+              <span class="animate-pulse">Thinking...</span>
+            {:else if anDone === 1}
+              {activeButton === "data"
+                ? "Viewing Data Analysis"
+                : "View Data Analysis"}
+            {:else}
+              Run Data Analysis
+            {/if}
+          </span>
+        </button>
 
-      <button
-        class="flex flex-row gap-2 items-center justify-center text-gray-500 hover:text-black shadow-none hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)] border border-gray-300 p-2 rounded-lg text-xs transition-all duration-300 ease-in-out disabled:cursor-not-allowed"
-        disabled={isLLMthinking}
-        on:click={runLLM}
-        on:click={setLLM}
-      >
-        <img
-          width="20"
-          height="20"
-          src="https://img.icons8.com/ios-glyphs/30/bot.png"
-          alt="bot"
-          class="fill-current"
-          class:animate-pulse={isLLMthinking}
-        />
-
-        {#if !isLLMthinking}
-          <span>Run AI Analysis</span>
-        {:else}
-          <span class="animate-pulse">Thinking...</span>
-        {/if}
-      </button>
-
+        <!-- GRAPH ANALYSIS BUTTON -->
+        <button
+          class={`flex flex-row gap-2 items-center justify-center border border-gray-300 p-2 rounded-lg text-xs transition-all duration-300 ease-in-out disabled:cursor-not-allowed ${
+            graphAnDone === 1
+              ? activeButton === "graph"
+                ? "bg-green-600 text-white hover:shadow-md"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+              : "text-gray-500 hover:text-black"
+          }`}
+          disabled={isLLMthinkingGraph}
+          on:click={() => {
+            activeButton = "graph";
+            if (graphAnDone !== 1) {
+              setLLM();
+              runLLMforGraph();
+            }
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 448 512"
+            class="fill-current"
+          >
+            <path
+              d="M160 80c0-26.5 21.5-48 48-48l32 0c26.5 0 48 21.5 48 48l0 352c0 26.5-21.5 48-48 48l-32 0c-26.5 0-48-21.5-48-48l0-352zM0 272c0-26.5 21.5-48 48-48l32 0c26.5 0 48 21.5 48 48l0 160c0 26.5-21.5 48-48 48l-32 0c-26.5 0-48-21.5-48-48L0 272zM368 96l32 0c26.5 0 48 21.5 48 48l0 288c0 26.5-21.5 48-48 48l-32 0c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48z"
+            />
+          </svg>
+          <span>
+            {#if isLLMthinkingGraph}
+              <span class="animate-pulse">Thinking...</span>
+            {:else if graphAnDone === 1}
+              {activeButton === "graph"
+                ? "Viewing Graph Analysis"
+                : "View Graph Analysis"}
+            {:else}
+              Run Graph Analysis
+            {/if}
+          </span>
+        </button>
+      </div>
       <div class="bg-gray-300 w-3/4 h-[2px] my-3 rounded-xl"></div>
 
       <div
         class="w-full h-full bg-gray-200 rounded-xl p-2 group hover:bg-gray-100 transition-all duration-100 ease-in-out overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
         class:animate-pulse={isLLMthinking}
       >
-        <div
-          class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
-        >
-          {@html renderedMarkdown}
+        {#if activeButton === "data"}
+          <div
+            class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+          >
+            {@html renderedMarkdown}
 
-          {#if !isLLMon && !isLLMthinking}
-            <ul class="list-disc pl-10">
-              <li>Select item/shade and hit enter</li>
-              <li>Run AI Analysis to gain advanced insights!</li>
-            </ul>
-          {/if}
-        </div>
+            {#if !isLLMon && !isLLMthinking}
+              <ul class="list-disc pl-10">
+                <li>Select item/shade and hit enter</li>
+                <li>Run AI Analysis to gain advanced insights!</li>
+              </ul>
+            {/if}
+          </div>
+        {:else}
+          <div
+            class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+          >
+            {@html renderedMarkdownGraph}
+
+            {#if !isLLMon && !isLLMthinking}
+              <ul class="list-disc pl-10">
+                <li>Select item/shade and hit enter</li>
+                <li>Run Graph Analysis to gain advanced insights!</li>
+              </ul>
+            {/if}
+          </div>
+        {/if}
       </div>
     </div>
   </div>
@@ -999,5 +1204,9 @@
 
   .card-growth {
     @apply w-full h-full rounded-lg flex items-center justify-start shadow-xl border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
+  }
+
+  .card-noclick {
+    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start shadow-xl border border-gray-300 cursor-pointer;
   }
 </style>

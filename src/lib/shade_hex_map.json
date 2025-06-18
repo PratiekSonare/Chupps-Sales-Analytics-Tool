@@ -1,0 +1,830 @@
+{
+  "ALPINE GREEN": {
+    "primary": "#000000",
+    "secondary": "#008000"
+  },
+  "APRICOT": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "BEIGE": {
+    "primary": "#F5F5DC",
+    "secondary": "#000000"
+  },
+  "BEIGE BEIGE": {
+    "primary": "#F5F5DC",
+    "secondary": "#F5F5DC"
+  },
+  "BEIGE NAVY": {
+    "primary": "#F5F5DC",
+    "secondary": "#000080"
+  },
+  "BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "BLACK BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "BLACK BROWN": {
+    "primary": "#000000",
+    "secondary": "#A52A2A"
+  },
+  "BLACK CAMO": {
+    "primary": "#000000",
+    "secondary": "#78866B"
+  },
+  "BLACK GOLD": {
+    "primary": "#000000",
+    "secondary": "#FFD700"
+  },
+  "BLACK GOLDEN": {
+    "primary": "#000000",
+    "secondary": "#FFD700"
+  },
+  "BLACK GREY": {
+    "primary": "#000000",
+    "secondary": "#808080"
+  },
+  "BLACK NEON GREEN": {
+    "primary": "#000000",
+    "secondary": "#39FF14"
+  },
+  "BLACK OLIVE": {
+    "primary": "#000000",
+    "secondary": "#808000"
+  },
+  "BLACK OMBRE BLUE": {
+    "primary": "#000000",
+    "secondary": "#003366"
+  },
+  "BLACK ORANGE": {
+    "primary": "#000000",
+    "secondary": "#FFA500"
+  },
+  "BLACK RED": {
+    "primary": "#000000",
+    "secondary": "#FF0000"
+  },
+  "BLACK TAN": {
+    "primary": "#000000",
+    "secondary": "#D2B48C"
+  },
+  "BLACK WHITE": {
+    "primary": "#000000",
+    "secondary": "#FFFFFF"
+  },
+  "BLACK YELLOW": {
+    "primary": "#000000",
+    "secondary": "#FFFF00"
+  },
+  "BLACK/BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "BLACK/GOLD": {
+    "primary": "#000000",
+    "secondary": "#FFD700"
+  },
+  "BLACK/GOLDEN": {
+    "primary": "#000000",
+    "secondary": "#FFD700"
+  },
+  "BLACKBERRY CORDIAL": {
+    "primary": "#4E3D53",
+    "secondary": "#000000"
+  },
+  "BLK BLK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "BLUE": {
+    "primary": "#0000FF",
+    "secondary": "#000000"
+  },
+  "BLUE ATOLL": {
+    "primary": "#0000FF",
+    "secondary": "#000000"
+  },
+  "BLUE GREY": {
+    "primary": "#0000FF",
+    "secondary": "#808080"
+  },
+  "BLUE HORIZON": {
+    "primary": "#0000FF",
+    "secondary": "#000000"
+  },
+  "BLUE NAVY": {
+    "primary": "#0000FF",
+    "secondary": "#000080"
+  },
+  "BLUE OPAL": {
+    "primary": "#0000FF",
+    "secondary": "#000000"
+  },
+  "BLUE WHITE": {
+    "primary": "#0000FF",
+    "secondary": "#FFFFFF"
+  },
+  "BLUE/WHITE": {
+    "primary": "#0000FF",
+    "secondary": "#FFFFFF"
+  },
+  "BOULEVARD": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "BROWN": {
+    "primary": "#A52A2A",
+    "secondary": "#000000"
+  },
+  "BROWN BLACK": {
+    "primary": "#A52A2A",
+    "secondary": "#000000"
+  },
+  "BUBBLEGUM": {
+    "primary": "#FFC1CC",
+    "secondary": "#000000"
+  },
+  "BUD GREEN": {
+    "primary": "#7BB661",
+    "secondary": "#008000"
+  },
+  "BURGUNDY": {
+    "primary": "#800020",
+    "secondary": "#000000"
+  },
+  "CARROT CURL": {
+    "primary": "#fd821c",
+    "secondary": "#000000"
+  },
+  "CHOCO MOCHA": {
+    "primary": "#967969",
+    "secondary": "#000000"
+  },
+  "CILANTRO": {
+    "primary": "#43544b",
+    "secondary": "#000000"
+  },
+  "CLASSIC BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "CLOVER": {
+    "primary": "#3EA055",
+    "secondary": "#000000"
+  },
+  "CLOVER BLUE": {
+    "primary": "#3EA055",
+    "secondary": "#0000FF"
+  },
+  "CREAM": {
+    "primary": "#FFFDD0",
+    "secondary": "#000000"
+  },
+  "DARK & BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "DARK BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "DARK BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "DARK GREY": {
+    "primary": "#000000",
+    "secondary": "#808080"
+  },
+  "DARK TAN": {
+    "primary": "#000000",
+    "secondary": "#D2B48C"
+  },
+  "DEEP ORCHID": {
+    "primary": "#9932CC",
+    "secondary": "#000000"
+  },
+  "DUSTY TURQUOISE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "EMBERGLOW": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "FEATHER GRAY": {
+    "primary": "#C5CBCF",
+    "secondary": "#000000"
+  },
+  "FIRECRACKER": {
+    "primary": "#f16b46",
+    "secondary": "#000000"
+  },
+  "FLAMINGO PINK": {
+    "primary": "#000000",
+    "secondary": "#FFC0CB"
+  },
+  "FROSTY SPRUCE": {
+    "primary": "#578270",
+    "secondary": "#000000"
+  },
+  "GIBRALTAR SEA": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "GOLD COLOR 2": {
+    "primary": "#FFD700",
+    "secondary": "#000000"
+  },
+  "GOLD FUSION": {
+    "primary": "#FFD700",
+    "secondary": "#000000"
+  },
+  "GREEN": {
+    "primary": "#008000",
+    "secondary": "#000000"
+  },
+  "GREEN BLACK": {
+    "primary": "#008000",
+    "secondary": "#000000"
+  },
+  "GREY": {
+    "primary": "#808080",
+    "secondary": "#000000"
+  },
+  "GREY & BLUE": {
+    "primary": "#808080",
+    "secondary": "#0000FF"
+  },
+  "GREY & ORANGE": {
+    "primary": "#808080",
+    "secondary": "#FFA500"
+  },
+  "GREY BLACK": {
+    "primary": "#808080",
+    "secondary": "#000000"
+  },
+  "GREY BLUE": {
+    "primary": "#808080",
+    "secondary": "#0000FF"
+  },
+  "GREY BROWN": {
+    "primary": "#808080",
+    "secondary": "#A52A2A"
+  },
+  "GREY MAROON": {
+    "primary": "#808080",
+    "secondary": "#800000"
+  },
+  "GREY NEON": {
+    "primary": "#808080",
+    "secondary": "#000000"
+  },
+  "GREY ORANGE": {
+    "primary": "#808080",
+    "secondary": "#FFA500"
+  },
+  "GREY R.BLUE": {
+    "primary": "#808080",
+    "secondary": "#000000"
+  },
+  "GREY ROYAL BLUE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "GREY WHITE": {
+    "primary": "#808080",
+    "secondary": "#FFFFFF"
+  },
+  "GRY BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "GRY BLK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "GUNPOWDER": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "HABANERO GOLD": {
+    "primary": "#000000",
+    "secondary": "#FFD700"
+  },
+  "HABENERO GOLD": {
+    "primary": "#000000",
+    "secondary": "#FFD700"
+  },
+  "HARBOR BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "HARBOUR GREY": {
+    "primary": "#000000",
+    "secondary": "#808080"
+  },
+  "HEMLOCK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "HOT CORAL": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "HUMMUS": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "JASPER": {
+    "primary": "#D73B3E",
+    "secondary": "#000000"
+  },
+  "L. BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "L. GREY BLUE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "L. GREY/BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "L.PINK PINK": {
+    "primary": "#000000",
+    "secondary": "#FFC0CB"
+  },
+  "LIGHT BLUE": {
+    "primary": "#ADD8E6",
+    "secondary": "#ADD8E6"
+  },
+  "LIGHT BLUE PRINT": {
+    "primary": "#ADD8E6",
+    "secondary": "#ADD8E6"
+  },
+  "LIGHT BROWN": {
+    "primary": "#000000",
+    "secondary": "#A52A2A"
+  },
+  "LIGHT GREY BLUE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "LIGHT GREY NAVY": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "LIGHT GREY ORANGE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "LIGHT GREY/ NAVY": {
+    "primary": "#000000",
+    "secondary": "#000080"
+  },
+  "LIGHT GREY/ORANGE": {
+    "primary": "#000000",
+    "secondary": "#FFA500"
+  },
+  "LIGHT PINK PINK": {
+    "primary": "#FFB6C1",
+    "secondary": "#FFC0CB"
+  },
+  "LILAC PURPLE": {
+    "primary": "#000000",
+    "secondary": "#800080"
+  },
+  "LIME GREEN": {
+    "primary": "#000000",
+    "secondary": "#008000"
+  },
+  "MAGENTA": {
+    "primary": "#FF00FF",
+    "secondary": "#000000"
+  },
+  "MARLIN": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "MAROON": {
+    "primary": "#800000",
+    "secondary": "#000000"
+  },
+  "MAROON PINK": {
+    "primary": "#800000",
+    "secondary": "#FFC0CB"
+  },
+  "MARROON": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "MEDIEVAL BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "MERCURY": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "MI BLUE LT. GREY": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "MINT GREEN": {
+    "primary": "#000000",
+    "secondary": "#008000"
+  },
+  "MUSKMELON": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "MUSTARD NAVY": {
+    "primary": "#000000",
+    "secondary": "#000080"
+  },
+  "MYKONOS BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "NAVY": {
+    "primary": "#000080",
+    "secondary": "#000000"
+  },
+  "NAVY & BLUE": {
+    "primary": "#000080",
+    "secondary": "#0000FF"
+  },
+  "NAVY BEIGE": {
+    "primary": "#000080",
+    "secondary": "#F5F5DC"
+  },
+  "NAVY BLUE": {
+    "primary": "#000080",
+    "secondary": "#0000FF"
+  },
+  "NAVY BLUE BLUE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "NAVY BLUE CAMO": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "NAVY BLUE GREY": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "NAVY BLUE/ BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "NAVY BRIGHT WHITE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "NAVY CAMO": {
+    "primary": "#000080",
+    "secondary": "#78866B"
+  },
+  "NAVY COLOR 2": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "NAVY GREY": {
+    "primary": "#000080",
+    "secondary": "#808080"
+  },
+  "NAVY NAVY": {
+    "primary": "#000080",
+    "secondary": "#000080"
+  },
+  "NAVY NEON GREEN": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "NAVY TAN": {
+    "primary": "#000080",
+    "secondary": "#D2B48C"
+  },
+  "NAVY WHITE": {
+    "primary": "#000080",
+    "secondary": "#FFFFFF"
+  },
+  "NAVY YELLOW": {
+    "primary": "#000080",
+    "secondary": "#FFFF00"
+  },
+  "NAVY/NAVY": {
+    "primary": "#000080",
+    "secondary": "#000080"
+  },
+  "NAVY/WHITE": {
+    "primary": "#000080",
+    "secondary": "#FFFFFF"
+  },
+  "NEON GREEN": {
+    "primary": "#000000",
+    "secondary": "#008000"
+  },
+  "OLIVE": {
+    "primary": "#808000",
+    "secondary": "#000000"
+  },
+  "OLIVE & GREEN": {
+    "primary": "#808000",
+    "secondary": "#008000"
+  },
+  "OLIVE BEIGE": {
+    "primary": "#808000",
+    "secondary": "#F5F5DC"
+  },
+  "OLIVE BLACK": {
+    "primary": "#808000",
+    "secondary": "#000000"
+  },
+  "OLIVE CAMO": {
+    "primary": "#808000",
+    "secondary": "#78866B"
+  },
+  "OLIVE GREEN": {
+    "primary": "#808000",
+    "secondary": "#008000"
+  },
+  "OLIVE GRN": {
+    "primary": "#808000",
+    "secondary": "#000000"
+  },
+  "OLIVE WHITE": {
+    "primary": "#808000",
+    "secondary": "#FFFFFF"
+  },
+  "ORANGE": {
+    "primary": "#FFA500",
+    "secondary": "#000000"
+  },
+  "ORANGE NAVY": {
+    "primary": "#FFA500",
+    "secondary": "#000080"
+  },
+  "ORANGE PRINT": {
+    "primary": "#FFA500",
+    "secondary": "#000000"
+  },
+  "ORANGE WHITE": {
+    "primary": "#FFA500",
+    "secondary": "#FFFFFF"
+  },
+  "PEACH": {
+    "primary": "#FFE5B4",
+    "secondary": "#000000"
+  },
+  "PINEAPPLE SLICE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "PINK": {
+    "primary": "#FFC0CB",
+    "secondary": "#000000"
+  },
+  "PINK COLOR 2": {
+    "primary": "#FFC0CB",
+    "secondary": "#000000"
+  },
+  "PINK WHITE": {
+    "primary": "#FFC0CB",
+    "secondary": "#FFFFFF"
+  },
+  "PIRATE & BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "PIRATE BLACK": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "PORCELAIN GREEN": {
+    "primary": "#000000",
+    "secondary": "#008000"
+  },
+  "PORT ROYAL": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "POTENT PURPLE": {
+    "primary": "#000000",
+    "secondary": "#800080"
+  },
+  "PURPLE": {
+    "primary": "#800080",
+    "secondary": "#000000"
+  },
+  "PURPLE GREY": {
+    "primary": "#800080",
+    "secondary": "#808080"
+  },
+  "PURPLE PRINT": {
+    "primary": "#800080",
+    "secondary": "#000000"
+  },
+  "PURPLE PURPLE": {
+    "primary": "#800080",
+    "secondary": "#800080"
+  },
+  "RAIN DRUM": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "RASBERRY": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "RED": {
+    "primary": "#FF0000",
+    "secondary": "#000000"
+  },
+  "RED YELLOW": {
+    "primary": "#FF0000",
+    "secondary": "#FFFF00"
+  },
+  "ROYAL BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "ROYAL BLUE & ORANGE": {
+    "primary": "#4169E1",
+    "secondary": "#FFA500"
+  },
+  "ROYAL BLUE ORANGE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "ROYAL BLUE/ORANGE": {
+    "primary": "#4169E1",
+    "secondary": "#FFA500"
+  },
+  "ROYAL BLUE/ROYAL BLUE": {
+    "primary": "#4169E1",
+    "secondary": "#4169E1"
+  },
+  "ROYALBLUE ROYAL BLUE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "SAMOAN SUN": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "SAVVY RED": {
+    "primary": "#000000",
+    "secondary": "#FF0000"
+  },
+  "SEA BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "SKY BLUE": {
+    "primary": "#000000",
+    "secondary": "#0000FF"
+  },
+  "SNOW WHITE": {
+    "primary": "#000000",
+    "secondary": "#FFFFFF"
+  },
+  "SWIM CAP": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "SYCAMORE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "TAN": {
+    "primary": "#D2B48C",
+    "secondary": "#000000"
+  },
+  "TAN BLUE": {
+    "primary": "#D2B48C",
+    "secondary": "#0000FF"
+  },
+  "TAN BROWN": {
+    "primary": "#D2B48C",
+    "secondary": "#A52A2A"
+  },
+  "TIBETAN STONE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "ULTIMATE GREY": {
+    "primary": "#000000",
+    "secondary": "#808080"
+  },
+  "VERY PERI": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "VIBRANT ORANGE": {
+    "primary": "#000000",
+    "secondary": "#FFA500"
+  },
+  "VIOLET": {
+    "primary": "#8F00FF",
+    "secondary": "#000000"
+  },
+  "WHITE": {
+    "primary": "#FFFFFF",
+    "secondary": "#000000"
+  },
+  "WHITE & GOLD": {
+    "primary": "#FFFFFF",
+    "secondary": "#FFD700"
+  },
+  "WHITE & ROYAL BLUE": {
+    "primary": "#FFFFFF",
+    "secondary": "#4169E1"
+  },
+  "WHITE BLACK": {
+    "primary": "#FFFFFF",
+    "secondary": "#000000"
+  },
+  "WHITE BLUE": {
+    "primary": "#FFFFFF",
+    "secondary": "#0000FF"
+  },
+  "WHITE BLUEIRIS": {
+    "primary": "#FFFFFF",
+    "secondary": "#000000"
+  },
+  "WHITE COLOR 2": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "WHITE GOLD": {
+    "primary": "#FFFFFF",
+    "secondary": "#FFD700"
+  },
+  "WHITE GREY": {
+    "primary": "#FFFFFF",
+    "secondary": "#808080"
+  },
+  "WHITE NAVY": {
+    "primary": "#FFFFFF",
+    "secondary": "#000080"
+  },
+  "WHITE OLIVE": {
+    "primary": "#FFFFFF",
+    "secondary": "#808000"
+  },
+  "WHITE PINK": {
+    "primary": "#FFFFFF",
+    "secondary": "#FFC0CB"
+  },
+  "WHITE PRINTED": {
+    "primary": "#FFFFFF",
+    "secondary": "#000000"
+  },
+  "WHITE ROYAL BLUE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "WHITE WHITE": {
+    "primary": "#FFFFFF",
+    "secondary": "#FFFFFF"
+  },
+  "WHITE YELLOW": {
+    "primary": "#FFFFFF",
+    "secondary": "#FFFF00"
+  },
+  "WHITE/GOLD": {
+    "primary": "#FFFFFF",
+    "secondary": "#FFD700"
+  },
+  "WHITE/ROYAL BLUE": {
+    "primary": "#FFFFFF",
+    "secondary": "#4169E1"
+  },
+  "WHITE/ROYAL BLUE PRINTED": {
+    "primary": "#FFFFFF",
+    "secondary": "#000000"
+  },
+  "WHITE/WHITE": {
+    "primary": "#FFFFFF",
+    "secondary": "#FFFFFF"
+  },
+  "WINE": {
+    "primary": "#000000",
+    "secondary": "#000000"
+  },
+  "WINTER MAROON": {
+    "primary": "#000000",
+    "secondary": "#800000"
+  },
+  "YELLOW": {
+    "primary": "#FFFF00",
+    "secondary": "#000000"
+  }
+}

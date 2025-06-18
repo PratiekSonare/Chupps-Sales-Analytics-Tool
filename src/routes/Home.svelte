@@ -48,9 +48,33 @@
             </div>
 
             <div
-                class="p-5 bg-white shadow-xl col-span-2 rounded-xl w-full h-full flex flex-col border border-gray-300"
+                class="py-5 px-10 bg-white shadow-xl col-span-2 rounded-xl w-full h-full flex flex-col border border-gray-300"
             >
                 <h1>Versions and Bugs</h1>
+
+                <div class="flex flex-row gap-10">
+                    <div class="bg-gray-300 rounded-xl py-5 px-10">
+                        <ul class="list-disc">
+                            Version
+                            <li class="text2">
+                                Forecast section complete with Deepseek V03 0324
+                                integration for meta-data analysis (16-06)
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-300 rounded-xl py-5 px-10">
+                        <ul class="list-disc">
+                            Bugs
+                            <li class="text2">
+                                'Growth' section not resetting to original value
+                                after set to default settings.
+                            </li>
+                            <li class="text2">
+                                Often 'Enter' button must be clicked twice for the forecast graph to appear!
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
