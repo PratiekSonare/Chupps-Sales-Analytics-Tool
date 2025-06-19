@@ -14,10 +14,11 @@ export const load: PageServerLoad = async () => {
   const { data: chupps_revenue, error: err4 } = await supabase.from('total_revenue').select('revenue');
   const { data: chupps_parties, error: err5 } = await supabase.from('total_parties').select('');
   const { data: itemFilteredDB, error: err10 } = await supabase.from('chupps_23_25_full').select('item', {count: 'exact'}).order('item', {ascending: true});
-
-  if (err1 || err2 || err3) {
+  const { data: ranked_items_by_sales, error: err11} = await supabase.from('ranked_items_by_sales').select('*');
+  const { data: ranked_shades_by_sales, error: err12} = await supabase.from('ranked_shades_by_sales').select('*');
+  
+  if (err1 || err2 || err3 || err11 ) {
     console.error('Supabase error:', err1 || err2 || err3);
-    return { wo_centro_prophet: [], total_sales: 0 }; // Return an empty array on error
   } else {
     console.log('Data fetched successfully!');
   }
@@ -29,6 +30,6 @@ export const load: PageServerLoad = async () => {
   const chupps_shades = chupps_shades_noSort;
 
   return {
-    wo_centro_prophet, chupps_23_25_full, total_sales, total_revenue, total_parties, chupps_items, chupps_shades, itemFilteredDB
+    wo_centro_prophet, chupps_23_25_full, ranked_items_by_sales, ranked_shades_by_sales, total_sales, total_revenue, total_parties, chupps_items, chupps_shades, itemFilteredDB
   };
 };

@@ -1,6 +1,6 @@
 <script lang="ts">
 	export let data;
-	const { wo_centro_prophet, chupps_23_25_full, total_sales, total_revenue, total_parties, chupps_items, chupps_shades, itemFilteredDB } = data;
+	const { wo_centro_prophet, chupps_23_25_full, ranked_items_by_sales, ranked_shades_by_sales, total_sales, total_revenue, total_parties, chupps_items, chupps_shades, itemFilteredDB } = data;
 
 	import Forecast from "./Forecast.svelte";
 	import Sidebar from "./sidebar/Sidebar.svelte";
@@ -35,7 +35,7 @@
 		{:else if activeView === "data"}
 			<Data />
 		{:else if activeView === "item-shade"}
-			<ItemShade {itemFilteredDB} {chupps_23_25_full} />
+			<ItemShade {ranked_items_by_sales} {ranked_shades_by_sales} {chupps_23_25_full} />
 		{:else if activeView === "regional"}
 			<Regional />
 		{:else if activeView === "forecast"}

@@ -2,7 +2,7 @@
 import requests
 import os
 import io
-from fastapi import FastAPI, Request, Path
+from fastapi import FastAPI, Request, Path, Body
 from pydantic import BaseModel
 import pandas as pd
 from typing import List, Dict, Optional, Union
@@ -156,7 +156,6 @@ def item_wise(item_name: str = Path(...), req: ForecastRequestItem = None):
     except Exception as e:
         return {"error": str(e)}
 
-
 @app.post("/shade/{shade_name}")
 def shade_wise(shade_name: str = Path(...), req: ForecastRequestItem = None):
     try:
@@ -234,9 +233,44 @@ def forecast_shade_wise(shade_name: str = Path(...), req: ForecastRequestItem = 
     except Exception as e:
         return {"error": str(e)}
 
+
+@app.post("/item-shade/{item_name}-{shade_name}")
+def item_wise(
+    item_name: str = Path(...),
+    shade_name: str = Path(...),
+    req: ForecastRequestItem = Body(...),
+):
+    try:
+        if not req.data:
+            return {"error": "No data provided."}
+
+        # Load into DataFrame
+        df = pd.DataFrame(req.data)
+
+        required_cols = {'purDate', 'item', 'shade', 'sales'}
+        if not required_cols.issubset(df.columns):
+            return {"error": f"Missing required columns. Required: {required_cols}"}
+
+        # Parse dates
+        df['purDate'] = pd.to_datetime(df['purDate'], format='%Y-%m-%d')
+
+        # Filter by item and shade
+        df_filtered = df[(df['item'] == item_name) & (df['shade'] == shade_name)]
+
+        if df_filtered.empty:
+            return {"error": f"No sales data found for item '{item_name}' and shade '{shade_name}'."}
+
+        # Aggregate
+        daily_item_sales = df_filtered.groupby('purDate')['sales'].sum().reset_index()
+        item_df = daily_item_sales.rename(columns={'purDate': 'ds', 'sales': 'y'})
+
+        return item_df[['ds', 'y']].to_dict(orient='records')
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # DEEPSEEK response - DeepSeek: DeepSeek V3 0324
-
-
 class Message(BaseModel):
     role: str
     content: str

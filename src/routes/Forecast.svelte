@@ -311,9 +311,6 @@
       y: row.y || row.sales, // support both field names
     }));
 
-    const custom_startDate = new Date("2025-03-01");
-    const custom_endDate = new Date("2026-02-01");
-
     const filteredForecastGrowth = filterForecast(
       startDate,
       endDate,
@@ -344,6 +341,11 @@
   }
 
   function applyFilters() {
+
+    if(!item_name && !shade_name){
+      currentSalesData = wo_centro_prophet;
+    }
+
     anDone = 0;
     graphAnDone = 0;
     renderedMarkdown = "";
