@@ -311,10 +311,7 @@
       y: row.y || row.sales, // support both field names
     }));
 
-    const filteredForecastGrowth = filterForecast(
-      startDate,
-      endDate,
-    );
+    const filteredForecastGrowth = filterForecast(startDate, endDate);
 
     const startDate_history = new Date("2024-03-01");
     const endDate_history = new Date("2025-03-01");
@@ -341,8 +338,7 @@
   }
 
   function applyFilters() {
-
-    if(!item_name && !shade_name){
+    if (!item_name && !shade_name) {
       currentSalesData = wo_centro_prophet;
     }
 
@@ -1060,7 +1056,9 @@
       class:row-start-1={!setOpen}
       class:row-start-2={setOpen}
     >
-      <span class="font-semibold text-2xl ai-font">AI Insights</span>
+      <!-- <span class="font-semibold text-2xl ai-font">AI Insights</span> -->
+      <img src="/chupps-ai.svg" alt="chupps ai logo" class="w-[30%]" />
+
       <span class="font-semibold text-xs mb-2 text-red-500"
         >Usage limit: {llm_used}</span
       >

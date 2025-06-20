@@ -18,8 +18,8 @@
 </script>
 
 <svelte:head>
-	<title>Sales Analytics - Chupps</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>Chupps AnalytI   cs</title>
+	<meta name="description" content="AI based analytics for Chupps!" />
 </svelte:head>
 
 <main class="flex w-screen h-screen overflow-hidden">

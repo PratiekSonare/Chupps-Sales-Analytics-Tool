@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import pandas as pd
 from typing import List, Dict, Optional, Union
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import base64
 from prophet import Prophet
 from fastapi.middleware.cors import CORSMiddleware
@@ -156,6 +157,7 @@ def item_wise(item_name: str = Path(...), req: ForecastRequestItem = None):
     except Exception as e:
         return {"error": str(e)}
 
+
 @app.post("/shade/{shade_name}")
 def shade_wise(shade_name: str = Path(...), req: ForecastRequestItem = None):
     try:
@@ -235,11 +237,7 @@ def forecast_shade_wise(shade_name: str = Path(...), req: ForecastRequestItem = 
 
 
 @app.post("/item-shade/{item_name}-{shade_name}")
-def item_wise(
-    item_name: str = Path(...),
-    shade_name: str = Path(...),
-    req: ForecastRequestItem = Body(...),
-):
+def item_wise(item_name: str = Path(...), shade_name: str = Path(...), req: ForecastRequestItem = Body(...),):
     try:
         if not req.data:
             return {"error": "No data provided."}
@@ -255,14 +253,17 @@ def item_wise(
         df['purDate'] = pd.to_datetime(df['purDate'], format='%Y-%m-%d')
 
         # Filter by item and shade
-        df_filtered = df[(df['item'] == item_name) & (df['shade'] == shade_name)]
+        df_filtered = df[(df['item'] == item_name) &
+                         (df['shade'] == shade_name)]
 
         if df_filtered.empty:
             return {"error": f"No sales data found for item '{item_name}' and shade '{shade_name}'."}
 
         # Aggregate
-        daily_item_sales = df_filtered.groupby('purDate')['sales'].sum().reset_index()
-        item_df = daily_item_sales.rename(columns={'purDate': 'ds', 'sales': 'y'})
+        daily_item_sales = df_filtered.groupby(
+            'purDate')['sales'].sum().reset_index()
+        item_df = daily_item_sales.rename(
+            columns={'purDate': 'ds', 'sales': 'y'})
 
         return item_df[['ds', 'y']].to_dict(orient='records')
 
@@ -327,6 +328,7 @@ async def chat_with_ai(request: ChatRequest):
 
 class ImgChatRequest(BaseModel):
     # Fields from ChatRequest
+
     message: Union[str, None] = None
     image_url: Union[str, None] = None
 
@@ -335,9 +337,15 @@ class ImgChatRequest(BaseModel):
     # Add other forecast parameters as needed
 
 
+class ImgChatItemShade(BaseModel):
+    item_name: str = Path(...)
+    shade_name: str = Path(...)
+    req: ForecastRequestItem = Body(...)
+
+
 # GOOGLE Gemma 3 - Graph Analysis
 @app.post("/api/imgchat")
-async def image_with_ai(request: ImgChatRequest):
+async def image_with_ai_forecast(request: ImgChatRequest):
     print('LLM endpoint called')
 
     df = pd.DataFrame(request.data)
@@ -383,7 +391,7 @@ async def image_with_ai(request: ImgChatRequest):
     img_buffer = io.BytesIO()
     fig.write_image(img_buffer, format="png")
     img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
-    
+
     api_key = os.getenv("OPENROUTER_KEY")
     if not api_key:
         raise HTTPException(
@@ -434,4 +442,114 @@ async def image_with_ai(request: ImgChatRequest):
         if hasattr(e, 'response') and e.response:
             error_detail += f" - Response: {e.response.text}"
         print(error_detail)
+        raise HTTPException(status_code=502, detail=error_detail)
+
+
+@app.post("/api/imgchat/itemshade/{item_name}")
+async def image_with_ai_forecast(item_name: str = Path(...), req: dict = Body(...)):
+    print('LLM endpoint called')
+
+    df = pd.DataFrame(req['data'])  # assuming request payload key is 'data'
+    df['purDate'] = pd.to_datetime(df['purDate'], format='%Y-%m-%d')
+
+    df = df[df['item'] == item_name]
+
+    unique_shades = df['shade'].unique()
+    num_shades = len(unique_shades)
+    cols = 3
+    rows = (num_shades + cols - 1) // cols  # ceiling division
+
+    # Plotly subplots
+    fig = make_subplots(rows=rows, cols=cols, subplot_titles=unique_shades)
+
+    for idx, shade in enumerate(unique_shades):
+        row = (idx // cols) + 1
+        col = (idx % cols) + 1
+
+        df_filtered = df[df['shade'] == shade]
+        daily_sales = df_filtered.groupby(
+            'purDate')['sales'].sum().reset_index()
+
+        fig.add_trace(
+            go.Scatter(
+                x=daily_sales['purDate'],
+                y=daily_sales['sales'],
+                name=shade,
+                mode='lines'
+            ),
+            row=row,
+            col=col
+        )
+
+    fig.update_layout(
+        height=rows * 300,
+        width=1200,
+        title_text="Day-wise Sales per Shade (Open Footwear)",
+        showlegend=False,
+        margin=dict(t=80)
+    )
+
+    # Convert to base64 image
+    img_buffer = io.BytesIO()
+    fig.write_image(img_buffer, format="png")
+    img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+
+    # LLM Prompt
+    user_message = f"""
+            You are a highly skilled product analyst for a footwear brand sold in India. The chart shows **daily sales trends** of multiple color shades of one item. Each subplot corresponds to a unique shade, visualized individually for clear trend recognition.
+
+            Please analyze this sales data by addressing the following:
+
+            1. Which shades appear most successful, and which ones underperform?
+            2. What social, seasonal, or cultural patterns might explain demand spikes or drops?
+            3. Which shade pairs show similar behavior and could be bundled or co-marketed?
+            4. How can geography (e.g., metro cities, humid vs. dry zones) influence these sales?
+            5. Based on the trends, what marketing or product strategies would you suggest for the Indian market?
+
+            Avoid technical terms like “time series” or “subplots.” Instead, speak in a product-marketing and retail analysis tone for a footwear team.
+            """
+
+    api_key = os.getenv("OPENROUTER_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=500, detail="OpenRouter API key missing")
+
+    try:
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:8000",
+                "X-Title": "Sales Dashboard",
+            },
+            data=json.dumps({
+                "model": "google/gemma-3-27b-it:free",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": user_message
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{img_base64}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+            })
+        )
+        return response.json()
+
+        console.log('image chat for itemshade: ', response.json())
+
+    except requests.exceptions.RequestException as e:
+        error_detail = f"OpenRouter request failed: {str(e)}"
+        if hasattr(e, 'response') and e.response:
+            error_detail += f" - Response: {e.response.text}"
         raise HTTPException(status_code=502, detail=error_detail)
