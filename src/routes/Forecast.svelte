@@ -1052,7 +1052,7 @@
     </div>
 
     <div
-      class="flex flex-col justify-start rounded-xl items-center shadow-xl h-full col-start-4 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
+      class="flex flex-col justify-start rounded-xl items-center bxsdw h-full col-start-4 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
       class:row-start-1={!setOpen}
       class:row-start-2={setOpen}
     >
@@ -1189,20 +1189,20 @@
   @reference "tailwindcss";
 
   .card {
-    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start shadow-xl border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
+    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start bxsdw border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
   }
   .card-alt {
     @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-transparent w-full h-full rounded-lg flex items-center justify-center border border-gray-300;
   }
   .card-alt2 {
-    @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-white w-full h-full rounded-lg flex items-center justify-start shadow-xl border border-gray-300;
+    @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-white w-full h-full rounded-lg flex items-center justify-start bxsdw border border-gray-300;
   }
 
   .card-growth {
-    @apply w-full h-full rounded-lg flex items-center justify-start shadow-xl border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
+    @apply w-full h-full rounded-lg flex items-center justify-start bxsdw border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
   }
 
   .card-noclick {
-    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start shadow-xl border border-gray-300 cursor-pointer;
+    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start bxsdw border border-gray-300 cursor-pointer;
   }
 </style>

@@ -18,7 +18,7 @@
 </script>
 
 <svelte:head>
-	<title>Chupps AnalytI   cs</title>
+	<title>Chupps Analytics</title>
 	<meta name="description" content="AI based analytics for Chupps!" />
 </svelte:head>
 
@@ -37,7 +37,7 @@
 		{:else if activeView === "item-shade"}
 			<ItemShade {ranked_items_by_sales} {ranked_shades_by_sales} {chupps_23_25_full} />
 		{:else if activeView === "regional"}
-			<Regional />
+			<Regional {ranked_items_by_sales} {ranked_shades_by_sales} {chupps_23_25_full} />
 		{:else if activeView === "forecast"}
 			<Forecast {wo_centro_prophet} {chupps_23_25_full} total_sales={total_sales} total_revenue={total_revenue} total_parties={total_parties} chupps_items={chupps_items} chupps_shades={chupps_shades} />
 		{/if}

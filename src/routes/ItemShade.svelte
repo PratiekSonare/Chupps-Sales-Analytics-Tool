@@ -530,7 +530,7 @@
 <div class="w-screen h-screen">
 	<div class="grid grid-cols-3 grid-rows-4 gap-3 h-full p-5">
 		<div
-			class="col-span-1 overflow-y-auto row-span-4 bg-white rounded-xl p-5 h-full shadow-xl border border-gray-400"
+			class="col-span-1 overflow-y-auto row-span-4 bg-white rounded-xl p-5 h-full bxsdw border border-gray-400"
 		>
 			<div class="grid grid-rows-[1fr_2fr] gap-5 h-full">
 				<div class="flex flex-col gap-2">
@@ -646,7 +646,7 @@
 		</div>
 
 		<div
-			class="col-start-2 p-5 col-span-3 row-start-3 row-span-2 bg-white rounded-xl shadow-xl border border-gray-400 overflow-hidden"
+			class="col-start-2 p-5 col-span-3 row-start-3 row-span-2 bg-white rounded-xl bxsdw border border-gray-400 overflow-hidden"
 		>
 			<div class="w-full flex items-start justify-between">
 				<span class="text-4xl">Sales Data</span>
@@ -694,7 +694,7 @@
 			class="col-start-2 col-span-2 row-start-0 row-span-2 flex gap-5 flex-row w-full h-full"
 		>
 			<div
-				class="bg-white rounded-xl shadow-xl p-5 border flex-3/4 border-gray-400"
+				class="bg-white rounded-xl bxsdw p-5 border flex-3/4 border-gray-400"
 				class:hidden={salesOff}
 			>
 				<span class="text-4xl">Sales Chart</span>
@@ -703,7 +703,7 @@
 
 			<!-- AI INSIGHTS  -->
 			<div
-				class="bg-white rounded-xl shadow-xl border flex-3/4 border-gray-400 flex flex-col items-center justify-start"
+				class="bg-white rounded-xl bxsdw border flex-3/4 border-gray-400 flex flex-col items-center justify-start"
 				class:hidden={!salesOff}
 			>
 				<!-- <span class="text-4xl ai-font">AI Insights</span> -->
@@ -726,7 +726,7 @@
 			</div>
 
 			<div
-				class=" bg-white rounded-xl shadow-xl border flex-1/4 border-gray-400"
+				class=" bg-white rounded-xl bxsdw border flex-1/4 border-gray-400"
 			>
 				<div
 					class="flex flex-col py-2 items-center justify-center gap-0 mt-auto"

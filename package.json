@@ -26,8 +26,14 @@
 		"@supabase/supabase-js": "^2.49.10",
 		"@tailwindcss/typography": "^0.5.16",
 		"@tailwindcss/vite": "^4.1.8",
+		"d3-geo": "^3.1.1",
+		"d3-scale": "^4.0.2",
+		"d3-selection": "^3.0.0",
+		"d3-zoom": "^3.0.0",
+		"leaflet": "^1.9.4",
 		"marker": "^0.1.2",
 		"plotly.js": "^3.0.1",
+		"svelte-leaflet": "^0.2.0",
 		"svelte-markdown": "^0.4.1",
 		"tailwindcss": "^4.1.8"
 	}
