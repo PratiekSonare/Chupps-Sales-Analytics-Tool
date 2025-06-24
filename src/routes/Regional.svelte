@@ -401,7 +401,7 @@
             "sales-table",
             [tableData],
             {
-                margin: { t: 10, b: 10, l: 20, r: 20 },
+                margin: { t: 0, b: 0, l: 20, r: 20 },
                 paper_bgcolor: "rgba(0,0,0,0)",
                 plot_bgcolor: "rgba(0,0,0,0)",
             },
@@ -574,7 +574,6 @@
     import { select } from "d3-selection";
     import { zoom } from "d3-zoom";
     import { scaleLinear } from "d3-scale";
-
     import indiaGeoJSON from "../lib/in.json"; // Make sure the path is correct
 
     let svg;
@@ -604,19 +603,27 @@
             .append("path")
             .attr("d", path)
             .attr("stroke", "#fff")
-            .attr("stroke-width", 0.5)
+            .attr("stroke-width", 0.1)
             .on("mouseover", function (event, d) {
                 const stateName = d.properties.name;
                 const sales = currentStateSalesMap?.get(stateName) || 0;
 
                 // Show tooltip
                 tooltip.style.visibility = "visible";
-                tooltip.innerHTML = `<strong>${stateName}</strong><br/>Sales: ${sales}`;
+                tooltip.innerHTML = `   <div style="padding: 6px 10px;">
+                                            <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">
+                                            ${stateName}
+                                            </div>
+                                            <div style="font-size: 12px;">
+                                            Sales: <strong>${sales}</strong>
+                                            </div>
+                                        </div>
+                                        `;
 
                 // Highlight the hovered path
                 select(this)
-                    .attr("stroke", "#005DBB") // darker border
-                    .attr("stroke-width", 2);
+                    .attr("stroke", "#000") // darker border
+                    .attr("stroke-width", 1.2);
                 // .attr("transform", "scale(1.05)");
             })
             .on("mousemove", function (event) {
@@ -638,7 +645,7 @@
 
         const colorScale = scaleLinear()
             .domain([0, maxSales])
-            .range(["#e0f3f8", "#08589e"]);
+            .range(["#ffeda0", "#f03b20"]);
 
         mapPaths.attr("fill", (d) => {
             const rawName = d.properties.name;
@@ -857,8 +864,4 @@
 </div>
 
 <style>
-    .map-container {
-        width: 100%;
-        height: 100%;
-    }
 </style>

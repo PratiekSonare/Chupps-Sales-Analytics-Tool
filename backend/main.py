@@ -276,11 +276,9 @@ class Message(BaseModel):
     role: str
     content: str
 
-
 class ChatRequest(BaseModel):
+    model: str
     messages: List[Message]
-    model: Optional[str] = "deepseek/deepseek-r1-0528:free"
-
 
 @app.post("/api/chat")
 async def chat_with_ai(request: ChatRequest):
@@ -288,16 +286,18 @@ async def chat_with_ai(request: ChatRequest):
 
     api_key = os.getenv("OPENROUTER_KEY")
     if not api_key:
-        raise HTTPException(
-            status_code=500, detail="OpenRouter API key missing")
+        raise HTTPException(status_code=500, detail="OpenRouter API key missing")
+
+    # Primary and fallback models
+    primary_model = request.model or "deepseek/deepseek-chat-v3-0324:free"
+    fallback_model = "deepseek/deepseek-r1-0528:free"
+
+    request_data = {
+        "model": primary_model,
+        "messages": [msg.dict() for msg in request.messages]
+    }
 
     try:
-        # Debug print the request we're sending
-        request_data = {
-            "model": request.model or "openai/gpt-3.5-turbo",
-            "messages": [msg.dict() for msg in request.messages]
-        }
-
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
@@ -310,20 +310,51 @@ async def chat_with_ai(request: ChatRequest):
             timeout=30
         )
 
-        # Print raw response for debugging
-        # print(f"OpenRouter response: {response.status_code} - {response.text}")
-        print("llm called successfully!")
-
         response.raise_for_status()
-        print('backend llm response: ', response)
-        return response.json()
+        result = response.json()
 
-    except requests.exceptions.RequestException as e:
-        error_detail = f"OpenRouter request failed: {str(e)}"
-        if hasattr(e, 'response') and e.response:
-            error_detail += f" - Response: {e.response.text}"
-        print(error_detail)
-        raise HTTPException(status_code=502, detail=error_detail)
+        # Check for missing or empty 'choices'
+        if not result.get("choices") or not result["choices"][0].get("message", {}).get("content"):
+            print("Primary model returned empty or invalid response. Using fallback model.")
+            raise Exception("Empty primary response")
+
+        print("Primary model successful!")
+        return result
+
+    except Exception as e:
+        print(f"Primary LLM failed: {e}")
+
+        # Try fallback model
+        fallback_data = {
+            "model": fallback_model,
+            "messages": [msg.dict() for msg in request.messages]
+        }
+
+        try:
+            fallback_response = requests.post(
+                url="https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "http://localhost:8000",
+                    "X-Title": "Sales Dashboard (Fallback)",
+                },
+                json=fallback_data,
+                timeout=30
+            )
+
+            fallback_response.raise_for_status()
+            fallback_result = fallback_response.json()
+
+            if not fallback_result.get("choices") or not fallback_result["choices"][0].get("message", {}).get("content"):
+                raise Exception("Fallback also returned empty response")
+
+            print("Fallback model successful!")
+            return fallback_result
+
+        except Exception as fallback_error:
+            print(f"Fallback LLM failed: {fallback_error}")
+            raise HTTPException(status_code=502, detail="Both primary and fallback LLMs failed.")
 
 
 class ImgChatRequest(BaseModel):

@@ -65,7 +65,7 @@
   let graphAnDone = 0;
   let anDone = 0;
   let expand_rotate = false;
-  let expand_forecast = false;
+  let expand_llm_response = false;
 
   let item_sales_data = wo_centro_prophet;
   let currentSalesData = wo_centro_prophet; // default (global data)
@@ -160,6 +160,8 @@
         renderedMarkdown = marked(
           "Error generating insights. Please try again.",
         );
+
+        console.log("Rendered Markdown: ", renderedMarkdown);
       } finally {
         anDone = 1;
         isLLMthinking = false;
@@ -554,9 +556,10 @@
     renderedMarkdown = "";
   }
 
-  function expandForecast() {
-    expand_forecast = !expand_forecast;
+  function expandLLMresponse() {
+    expand_llm_response = !expand_llm_response;
   }
+
   //LLM PARSING
   function generateMetadata() {
     const isFiltered = item_name || shade_name;
@@ -652,6 +655,7 @@
           Accept: "application/json",
         },
         body: JSON.stringify({
+          model: "deepseek/deepseek-chat-v3-0324:free",
           messages: [{ role: "user", content: alt_prompt }],
         }),
       });
@@ -708,28 +712,64 @@
   <CalculationPopup bind:calculationOpen />
 {/if}
 
-<div class="w-screen h-screen">
+<div class="w-screen h-screen relative">
+  {#if expand_llm_response}
+    <div
+      class="rounded-xl bxsdw absolute z-[250] p-5 w-1/2 h-3/4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-300 border border-gray-700"
+    >
+      <button on:click={() => expand_llm_response = false} class="absolute top-8 right-10 text-2xl text-red-400">x</button>
+
+      {#if activeButton === "data"}
+        <div
+          class="border w-full h-full p-10 rounded-xl border-gray-400 bxsdw bg-gray-200 whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+        >
+          {@html renderedMarkdown}
+
+          {#if !isLLMon && !isLLMthinking}
+            <ul class="list-disc pl-10">
+              <li>Select item/shade and hit enter</li>
+              <li>Run AI Analysis to gain advanced insights!</li>
+            </ul>
+          {/if}
+        </div>
+      {:else}
+        <div
+          class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+        >
+          {@html renderedMarkdownGraph}
+
+          {#if !isLLMon && !isLLMthinking}
+            <ul class="list-disc pl-10">
+              <li>Select item/shade and hit enter</li>
+              <li>Run Graph Analysis to gain advanced insights!</li>
+            </ul>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
+
   <div class="grid grid-cols-4 grid-rows-[1fr_3fr_3fr_1fr] gap-3 h-full p-5">
-    <div class="card flex flex-col p-2">
+    <div class="card bxsdw flex flex-col p-2">
       <span class="text-xl mt-auto">Total Pairs Sold</span>
       <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
       <span class="text-5xl text-black my-auto">{formatted_total_sales}</span>
     </div>
 
-    <div class="card flex flex-col p-2">
+    <div class="card bxsdw flex flex-col p-2">
       <span class="text-xl mt-auto">Total Revenue Generated</span>
       <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
       <span class="text-5xl text-black my-auto">{formatted_total_revenue}</span>
     </div>
 
     <div class="flex flex-row gap-3">
-      <div class="card flex flex-col p-2">
+      <div class="card bxsdw flex flex-col p-2">
         <span class="text-xl mt-auto">Total Parties</span>
         <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
         <span class="text-5xl text-black my-auto">{total_parties}</span>
       </div>
       <div
-        class="card-growth flex flex-col p-2"
+        class="card-growth bxsdw shadow-xl flex flex-col p-2"
         class:bg-green-300={percentage_growth > 0}
         class:bg-red-300={percentage_growth < 0}
       >
@@ -891,13 +931,15 @@
     {/if}
 
     <!-- //if setOpen = true, then change row-start-2 to row-start-1 -->
-    <div class={`card col-start-3 row-start-2 row-end-3 flex flex-col py-2`}>
+    <div
+      class={`card bxsdw col-start-3 row-start-2 row-end-3 flex flex-col py-2`}
+    >
       <span>Data Input</span>
       <div id="forecast-table" class="w-full h-full"></div>
     </div>
 
     <div
-      class="card-alt2 col-start-3 row-start-3 row-span-3 flex-col w-full h-full"
+      class="card-alt2 bxsdw col-start-3 row-start-3 row-span-3 flex-col w-full h-full"
     >
       <div class="flex flex-col justify-center items-center mt-5">
         <span class="">Data Statistics</span>
@@ -972,11 +1014,7 @@
       {/each}
     </div>
 
-    <div
-      class="col-span-2 card-noclick flex flex-col"
-      class:row-start-1={expand_forecast}
-      class:row-end-3={expand_forecast}
-    >
+    <div class="col-span-2 card-noclick bxsdw flex flex-col">
       <div
         class="flex flex-row items-center justify-between w-full gap-0 px-10"
       >
@@ -991,7 +1029,7 @@
       ></div>
     </div>
 
-    <div class="col-span-2 row-span-3 card-noclick flex flex-col">
+    <div class="col-span-2 row-span-3 card-noclick bxsdw flex flex-col">
       <div
         class="flex flex-row items-center justify-between w-full gap-0 px-10"
       >
@@ -1052,7 +1090,7 @@
     </div>
 
     <div
-      class="flex flex-col justify-start rounded-xl items-center bxsdw h-full col-start-4 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
+      class="flex flex-col bxsdw justify-start rounded-xl items-center h-full col-start-4 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
       class:row-start-1={!setOpen}
       class:row-start-2={setOpen}
     >
@@ -1147,12 +1185,28 @@
           </span>
         </button>
       </div>
+
       <div class="bg-gray-300 w-3/4 h-[2px] my-3 rounded-xl"></div>
 
       <div
         class="w-full h-full bg-gray-200 rounded-xl p-2 group hover:bg-gray-100 transition-all duration-100 ease-in-out overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
         class:animate-pulse={isLLMthinking}
       >
+        <button
+          class="text-gray-400 hover:text-black justify-end"
+          on:click={expandLLMresponse}
+          ><svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+            width="20"
+            height="20"
+            class="fill-current"
+            ><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path
+              d="M200 32L56 32C42.7 32 32 42.7 32 56l0 144c0 9.7 5.8 18.5 14.8 22.2s19.3 1.7 26.2-5.2l40-40 79 79-79 79L73 295c-6.9-6.9-17.2-8.9-26.2-5.2S32 302.3 32 312l0 144c0 13.3 10.7 24 24 24l144 0c9.7 0 18.5-5.8 22.2-14.8s1.7-19.3-5.2-26.2l-40-40 79-79 79 79-40 40c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8l144 0c13.3 0 24-10.7 24-24l0-144c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2l-40 40-79-79 79-79 40 40c6.9 6.9 17.2 8.9 26.2 5.2s14.8-12.5 14.8-22.2l0-144c0-13.3-10.7-24-24-24L312 32c-9.7 0-18.5 5.8-22.2 14.8s-1.7 19.3 5.2 26.2l40 40-79 79-79-79 40-40c6.9-6.9 8.9-17.2 5.2-26.2S209.7 32 200 32z"
+            /></svg
+          ></button
+        >
+
         {#if activeButton === "data"}
           <div
             class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
@@ -1188,21 +1242,29 @@
 <style>
   @reference "tailwindcss";
 
+  .bxsdw {
+    box-shadow:
+      rgba(0, 0, 0, 0.09) 0px 2px 1px,
+      rgba(0, 0, 0, 0.09) 0px 4px 2px,
+      rgba(0, 0, 0, 0.09) 0px 8px 4px,
+      rgba(0, 0, 0, 0.09) 0px 16px 8px,
+      #00000017 0px 32px 16px;
+  }
   .card {
-    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start bxsdw border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
+    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start  border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
   }
   .card-alt {
     @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-transparent w-full h-full rounded-lg flex items-center justify-center border border-gray-300;
   }
   .card-alt2 {
-    @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-white w-full h-full rounded-lg flex items-center justify-start bxsdw border border-gray-300;
+    @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-white w-full h-full rounded-lg flex items-center justify-start  border border-gray-300;
   }
 
   .card-growth {
-    @apply w-full h-full rounded-lg flex items-center justify-start bxsdw border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
+    @apply w-full h-full rounded-lg flex items-center justify-start  border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
   }
 
   .card-noclick {
-    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start bxsdw border border-gray-300 cursor-pointer;
+    @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start border border-gray-300 cursor-pointer;
   }
 </style>
