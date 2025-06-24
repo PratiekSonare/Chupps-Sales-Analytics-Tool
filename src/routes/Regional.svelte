@@ -25,8 +25,7 @@
     export let ranked_shades_by_sales;
 
     let items = [];
-    // let selectedItem = "CHUPPS X MI LEGACY";
-    // let selectedShade = "BLUE";
+    let infoOpen = false;
     let selectedItem = "APEX";
     let selectedShade = "BLACK";
     let shades = [];
@@ -167,6 +166,8 @@
             [tableData],
             {
                 margin: { t: 10, b: 10, l: 20, r: 20 },
+                outerHeight: 600,
+                innerHeight: 600,
                 paper_bgcolor: "rgba(0,0,0,0)",
                 plot_bgcolor: "rgba(0,0,0,0)",
             },
@@ -401,7 +402,9 @@
             "sales-table",
             [tableData],
             {
-                margin: { t: 0, b: 0, l: 20, r: 20 },
+                margin: { t: 10, b: 10, l: 20, r: 20 },
+                outerHeight: 600,
+                innerHeight: 600,
                 paper_bgcolor: "rgba(0,0,0,0)",
                 plot_bgcolor: "rgba(0,0,0,0)",
             },
@@ -653,6 +656,204 @@
             return sales ? colorScale(sales) : "#ccc";
         });
     }
+
+    let rules = [
+        {
+            index: "1",
+            rule: "Only offline parties (distributors) have been tagged with location, <strong>no mapping</strong> for sales done in online marketplaces (Myntra, Flipkar, etc.)",
+            code: "",
+        },
+        {
+            index: "2",
+            rule: "From the entire database, only a certain offline distributor parties have been tagged with locations. Additionally, the names of the same distributors were different, which have been updated to maintain uniformity.",
+            code: `
+                    <br/> 'ADITI FOOTWEAR                -CHITTORGARH': 'ADITI FOOTWEAR', 
+                    <br/> 'AG TRENDS                     -HYDRABAD': 'AG TRENDS',
+                    <br/> 'AIREN ENTERPRISES             -HISAR': 'AIREN ENTERPRISES',
+                    <br/> 'BAGGA SALES AGENCY            -AHEDABAD': 'BAGGA SALES AGENCY',
+                    <br/> 'DEVRAJ AND SONS               -KORAPUT': 'DEVRAJ AND SONS',
+                    <br/> 'GNM FOOTWEAR                  -DELHI': 'GNM FOOTWEAR',
+                    <br/> 'GURU SHOES TECH PVT. LTD      -AGRA': 'GURU SHOES TECH PVT. LTD',
+                    <br/> 'J.S.DISTRIBUTOR               -BANGLORE': 'J.S.DISTRIBUTORS',
+                    <br/> 'JAYSHREE MARKETING            -BHOPAL': 'JAYSHREE MARKETING',
+                    <br/> 'KIRANAKART TECHNOLOGIES PVT LTD -MUMBAI': 'KIRANAKART TECHNOLOGIES PVT LTD',
+                    <br/> 'KIRANAKART TECHNOLOGIES PVT LTD BR -BANGLORE': 'KIRANAKART TECHNOLOGIES PVT LTD',
+                    <br/> 'KIRANAKART TECHNOLOGIES PVT LTD CH -CHENNAI': 'KIRANAKART TECHNOLOGIES PVT LTD',
+                    <br/> 'KIRANAKART TECHNOLOGIES PVT LTD HR -GURUGRAM': 'KIRANAKART TECHNOLOGIES PVT LTD',
+                    <br/> 'KWALITY ENTERPRISES           -BHAWANIPATNA': 'KWALITY ENTERPRISES',
+                    <br/> 'M/S SHOE PARK                 -JAGDALPUR': 'M/S SHOEPARK (JAGDALPUR)',
+                    <br/> 'M/S STYLE SHOES               -BHUBNESHWAR': 'M/S STYLE SHOES',
+                    <br/> 'MAHARAJA ENTERPRISES          -RAIPUR': 'MAHARAJA ENTERPRISES',
+                    <br/> 'MANOHAR BOOT HOUSE            -BILASPUR': 'MANOHAR BOOT HOUSE',
+                    <br/> 'MK FOOTWEAR                   -HARIDWAR': 'MK FOOTWEAR',
+                    <br/> 'NEW STAR FOOTWEAR             -KORAPUT': 'NEW STAR FOOTWEAR ODISHA',
+                    <br/> 'RAMDEV SHOE TRADING COMPANY   -CHENNAI': 'RAMDEV SHOE TRADING COMPANY',
+                    <br/> 'BOOTS MADGAON                 -GOA': 'BOOTS',
+                    <br/> 'BOOTS PANJI                   -GOA': 'BOOTS',
+                    <br/> 'CENTRO (V-RETAIL PVT LTD - WAREHOUSE)': 'CENTRO',
+                    <br/> 'CENTRO - CNR-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO SAGX (V-RETAIL LTD)    -HYDRABAD': 'CENTRO',
+                    <br/> 'CENTRO SAGX (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- 6 MALL SS (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- ASRN (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- CP (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- FRM (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- GBS (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- HNR (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- KMPL (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- KP (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- KPT-LB (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- KRK (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO- VZM (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-CELEST (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-GSM-SS (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-HNK-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-KKD-SBR-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-KKD-SRMT (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-KRM-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-LNT-L4-SS (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-MALHAR (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-NIZAMABAD (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'CENTRO-SCM-SS (V-RETAIL PVT LTD)': 'CENTRO',
+                    <br/> 'SIKKIM COMMERCIAL             -BHUBNESHWAR': 'SIKKIM COMMERCIAL',
+                    <br/> 'SIKKIM COMMERCIAL CORPORATION -KOLKATA': 'SIKKIM COMMERCIAL CORPORATION',
+                    <br/> 'SHREE KRISHNA FOOTWEAR        -BAHADURGARH': 'SHREE KRISHNA FOOTWEAR',
+                    <br/> 'SHREEJI FOOTWEAR              -BAHADURGARH': 'SHREEJI FOOTWEAR',
+                    <br/> 'MAA VAISHNAVI INTERNATIONAL   -GURUGRAM': 'MAA VAISHNAVI INTERNATIONAL',
+                    <br/> 'STEP IN                       -RANCHI': 'STEP IN',
+                    <br/> 'SURE LEATHER EXPORTS          -AGRA': 'SURE LEATHER EXPORTS',
+                    <br/> 'TATA UNISTORE LIMITED-KORALURU -BANGALORE': 'TATA UNISTORE LIMITED',
+                    <br/> 'TWAM ENTERPRISE               -THANE': 'TWAM ENTERPRISE',
+                    <br/> 'M/S SOFT WALK                 -BHADRAK': 'M/S SOFT WALK'
+            `,
+        },
+
+        {
+            index: "3",
+            rule: "Final distributor names with locations (considered for mapping) are:",
+            code: `
+            <br/> 'ADITI FOOTWEAR',
+            <br/> 'AG TRENDS',
+            <br/> 'AIREN ENTERPRISES',
+            <br/> 'BAGGA SALES AGENCY',
+            <br/> 'DEVRAJ AND SONS',
+            <br/> 'GNM FOOTWEAR',
+            <br/> 'GURU SHOES TECH PVT. LTD',
+            <br/> 'J.S.DISTRIBUTORS',
+            <br/> 'JAYSHREE MARKETING',
+            <br/> 'KIRANAKART TECHNOLOGIES PVT LTD',
+            <br/> 'KWALITY ENTERPRISES',
+            <br/> 'M/S SHOEPARK (JAGDALPUR)',
+            <br/> 'M/S STYLE SHOES',
+            <br/> 'MAHARAJA ENTERPRISES',
+            <br/> 'MANOHAR BOOT HOUSE',
+            <br/> 'MK FOOTWEAR',
+            <br/> 'NEW STAR FOOTWEAR ODISHA',
+            <br/> 'RAMDEV SHOE TRADING COMPANY',
+            <br/> 'SIKKIM COMMERCIAL',
+            <br/> 'SIKKIM COMMERCIAL CORPORATION',
+            <br/> 'SHREE KRISHNA FOOTWEAR',
+            <br/> 'SHREEJI FOOTWEAR',
+            <br/> 'MAA VAISHNAVI INTERNATIONAL',
+            <br/> 'STEP IN',
+            <br/> 'SURE LEATHER EXPORTS',
+            <br/> 'TATA UNISTORE LIMITED',
+            <br/> 'TWAM ENTERPRISE',
+            <br/> 'CENTRO',
+    `,
+        },
+        {
+            index: "4",
+            rule: "The following locations have been enabled to each distributor for mapping: ",
+            code: ` <br/> 'ADITI FOOTWEAR': 'CHITTORGARH',
+                <br/> 'AG TRENDS': 'HYDERABAD',
+                <br/> 'AIREN ENTERPRISES': 'HISAR',
+                <br/> 'BAGGA SALES AGENCY': 'AHMEDABAD',
+                <br/> 'DEVRAJ AND SONS': 'KORAPUT',
+                <br/> 'GNM FOOTWEAR': 'DELHI',
+                <br/> 'GURU SHOES TECH PVT. LTD': 'AGRA',
+                <br/> 'J.S.DISTRIBUTORS': 'BANGALORE',
+                <br/> 'JAYSHREE MARKETING': 'BHOPAL',
+                <br/> 'KIRANAKART TECHNOLOGIES PVT LTD': 'MULTIPLE',
+                <br/> 'KWALITY ENTERPRISES': 'BHAWANIPATNA',
+                <br/> 'M/S SHOEPARK (JAGDALPUR)': 'JAGDALPUR',
+                <br/> 'M/S STYLE SHOES': 'BHUBANESWAR',
+                <br/> 'MAHARAJA ENTERPRISES': 'RAIPUR',
+                <br/> 'MANOHAR BOOT HOUSE': 'BILASPUR',
+                <br/> 'MK FOOTWEAR': 'HARIDWAR',
+                <br/> 'NEW STAR FOOTWEAR ODISHA': 'KORAPUT',
+                <br/> 'RAMDEV SHOE TRADING COMPANY': 'CHENNAI',
+                <br/> 'SIKKIM COMMERCIAL': 'BHUBANESWAR',
+                <br/> 'SIKKIM COMMERCIAL CORPORATION': 'KOLKATA',
+                <br/> 'SHREE KRISHNA FOOTWEAR': 'BAHADURGARH',
+                <br/> 'SHREEJI FOOTWEAR': 'BAHADURGARH',
+                <br/> 'MAA VAISHNAVI INTERNATIONAL': 'GURUGRAM',
+                <br/> 'STEP IN': 'RANCHI',
+                <br/> 'SURE LEATHER EXPORTS': 'AGRA',
+                <br/> 'TATA UNISTORE LIMITED': 'BANGALORE',
+                <br/> 'TWAM ENTERPRISE': 'THANE',
+                <br/> 'CENTRO': 'MULTIPLE'
+    `,
+        },
+        {
+            index: "5",
+            rule: "Finally, zones and states were decided based on maps as follows: ",
+            code: `
+                ---------ZONES-------------
+                <br/> 'AGRA': 'NORTH',
+                <br/> 'AHMEDABAD': 'WEST',
+                <br/> 'BAHADURGARH': 'EAST',
+                <br/> 'BANGALORE': 'SOUTH',
+                <br/> 'BHAWANIPATNA': 'EAST',
+                <br/> 'BHOPAL': 'WEST',
+                <br/> 'BHUBANESWAR': 'EAST',
+                <br/> 'BILASPUR': 'NORTH',
+                <br/> 'CHENNAI': 'SOUTH',
+                <br/> 'CHITTORGARH': 'WEST',
+                <br/> 'DELHI': 'NORTH',
+                <br/> 'GURUGRAM': 'NORTH',
+                <br/> 'HARIDWAR': 'NORTH',
+                <br/> 'HISAR': 'NORTH',
+                <br/> 'HYDERABAD': 'SOUTH',
+                <br/> 'JAGDALPUR': 'NORTH',
+                <br/> 'KOLKATA': 'EAST',
+                <br/> 'KORAPUT': 'EAST',
+                <br/> 'RAIPUR': 'NORTH',
+                <br/> 'RANCHI': 'EAST',
+                <br/> 'THANE': 'WEST',
+
+                <br/>
+                <br/>
+
+                <br/> --------STATES-------------
+                <br/> 'AGRA': 'Uttar Pradesh',
+                <br/> 'AHMEDABAD': 'Gujarat',
+                <br/> 'BAHADURGARH': 'Haryana',
+                <br/> 'BANGALORE': 'Karnataka',
+                <br/> 'BHAWANIPATNA': 'Odisha',
+                <br/> 'BHOPAL': 'Madhya Pradesh',
+                <br/> 'BHUBANESWAR': 'Odisha',
+                <br/> 'BILASPUR': 'Chhattisgarh',
+                <br/> 'CHENNAI': 'Tamil Nadu',
+                <br/> 'CHITTORGARH': 'Rajasthan',
+                <br/> 'DELHI': 'Delhi',
+                <br/> 'GURUGRAM': 'Haryana',
+                <br/> 'HARIDWAR': 'Uttarakhand',
+                <br/> 'HISAR': 'Haryana',
+                <br/> 'HYDERABAD': 'Telangana',
+                <br/> 'JAGDALPUR': 'Chhattisgarh',
+                <br/> 'KOLKATA': 'West Bengal',
+                <br/> 'KORAPUT': 'Odisha',
+                <br/> 'MULTIPLE': 'UNKNOWN',
+                <br/> 'RAIPUR': 'Chhattisgarh',
+                <br/> 'RANCHI': 'Jharkhand',
+                <br/> 'THANE': 'Maharashtra',
+                <br/> 'UNKNOWN': 'UNKNOWN'
+                                                
+    `,
+        },
+    ];
+
 </script>
 
 <div
@@ -670,7 +871,39 @@
 "
 ></div>
 
-<div class="w-screen h-screen">
+<div class="w-screen h-screen relative">
+    {#if infoOpen}
+        <div
+            class="rounded-xl bxsdw absolute overflow-y-auto z-[250] p-5 w-1/2 h-3/4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-300 border border-gray-700"
+        >
+            <button
+                on:click={() => (infoOpen = false)}
+                class="absolute top-8 right-10 text-2xl text-red-400 hover:text-red-600"
+                >x</button
+            >
+
+            <div class="mt-10"></div>
+
+            {#each rules as content}
+                <div
+                    class="flex flex-col items-center justify-start h-fit text2 p-5 mt-1"
+                >
+                    <span class="text-3xl">{content.index}.</span>
+                    <span class="text-center">{@html content.rule}</span>
+                    {#if content.code !== ""}
+                        <div
+                            class=" mt-2 h-[250px] w-full overflow-y-scroll bg-white rounded-xl text-xs p-3"
+                        >
+                            <span class="text-left font-mono"
+                                >{@html content.code}</span
+                            >
+                        </div>
+                    {/if}
+                </div>
+            {/each}
+        </div>
+    {/if}
+
     <div class="grid grid-cols-12 grid-rows-4 gap-3 h-full p-5">
         <div
             class="col-span-4 overflow-y-auto row-span-4 bg-white rounded-xl p-5 h-full bxsdw border border-gray-300"
@@ -746,6 +979,7 @@
                     {#if images.length > 0}
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                             {#each images as image}
+                                <!-- svelte-ignore a11y_img_redundant_alt -->
                                 <img
                                     src={image}
                                     alt="Product image"
@@ -793,23 +1027,24 @@
         >
             <!-- <img src="/india.svg" alt="india"> -->
 
-            <div class="flex items-center justify-center overflow-x-hidden">
+            <div
+                class="flex items-center justify-center overflow-x-hidden mt-5"
+            >
                 <svg bind:this={svg} />
             </div>
 
-            <div class="px-5 w-full flex items-start justify-between">
-                <span class="text-4xl">Sales Data</span>
+            <div class="px-5 w-full flex items-start justify-between mt-32">
+                <span class="text-4xl" bind:this={salesTableRef}
+                    >Sales Data</span
+                >
             </div>
-            <div class="relative">
+            <div class="relative h-full">
                 <!-- Table on top -->
                 <div
                     id="sales-table"
                     class="w-full h-full z-100 relative"
-                    bind:this={salesTableRef}
                 ></div>
 
-                <!-- Spans behind the table -->
-                <!-- Spans behind the table -->
                 <div class="flex flex-row gap-5 absolute -top-9 right-5 z-0">
                     <span
                         class="text2b text-white text-lg p-2 rounded-t-lg"
@@ -839,22 +1074,44 @@
                 </div>
             </div>
 
-            <button
-                class="absolute top-5 right-5 p-2 text2 text-sm flex flex-row gap-2 rounded-lg border hover:bg-gray-400 hover:text-white duration-200"
-                on:click={scrollToSalesTable}
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 512 512"
-                    width="20"
-                    height="20"
-                    class="fill-current"
-                    ><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path
-                        d="M64 256l0-96 160 0 0 96L64 256zm0 64l160 0 0 96L64 416l0-96zm224 96l0-96 160 0 0 96-160 0zM448 256l-160 0 0-96 160 0 0 96zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32z"
-                    /></svg
+            <div class="flex flex-row gap-2 absolute top-5 right-5">
+                <!-- svelte-ignore a11y_consider_explicit_label -->
+                <button
+                    on:click={() => (infoOpen = !infoOpen)}
+                    class="text-gray-700 hover:text-black"
                 >
-                <span>View Data</span>
-            </button>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        x="0px"
+                        y="0px"
+                        width="24"
+                        height="24"
+                        class="fill-current"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            d="M 12 2 C 6.4889971 2 2 6.4889971 2 12 C 2 17.511003 6.4889971 22 12 22 C 17.511003 22 22 17.511003 22 12 C 22 6.4889971 17.511003 2 12 2 z M 12 4 C 16.430123 4 20 7.5698774 20 12 C 20 16.430123 16.430123 20 12 20 C 7.5698774 20 4 16.430123 4 12 C 4 7.5698774 7.5698774 4 12 4 z M 11 7 L 11 9 L 13 9 L 13 7 L 11 7 z M 11 11 L 11 17 L 13 17 L 13 11 L 11 11 z"
+                        ></path>
+                    </svg>
+                </button>
+
+                <button
+                    class="px-2 py-1 text2 text-sm flex flex-row gap-2 rounded-lg border hover:bg-gray-400 hover:text-white duration-200"
+                    on:click={scrollToSalesTable}
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 512 512"
+                        width="16"
+                        height="16"
+                        class="fill-current"
+                        ><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path
+                            d="M64 256l0-96 160 0 0 96L64 256zm0 64l160 0 0 96L64 416l0-96zm224 96l0-96 160 0 0 96-160 0zM448 256l-160 0 0-96 160 0 0 96zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32z"
+                        /></svg
+                    >
+                    <span class="text-xs">View Data</span>
+                </button>
+            </div>
         </div>
 
         <div
@@ -864,4 +1121,9 @@
 </div>
 
 <style>
+    @reference "tailwindcss";
+
+    button {
+        @apply transition-all transform cursor-pointer active:scale-95 scale-100 duration-100 ease-in;
+    }
 </style>

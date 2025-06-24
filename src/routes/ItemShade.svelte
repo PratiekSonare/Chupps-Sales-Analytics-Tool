@@ -4,7 +4,7 @@
 	import shadeHexMap from "../lib/shade_hex_map.json";
 	import { marked } from "marked";
 	import { tweened } from "svelte/motion";
-	import { onMount } from "svelte";
+	import { onMount, tick } from "svelte";
 	import { cubicOut } from "svelte/easing";
 
 	// Create tweened stores
@@ -33,11 +33,13 @@
 	let sku = "";
 	let filteredData = [];
 	let aggFilteredData = [];
+	let allShadesPlotUrl = "";
 	let images = [];
 	let loading = 0;
 	let yearDiff = 0;
 	let shadeItemSelected = false;
 	let thinking = false;
+	let allShadeSalesVisible = false;
 
 	// let llmResponse = "Loading...";
 	let llmResponse = `Okay, let's break down these sales figures for our open footwear in India. Here’s what I'm seeing, thinking from a product and marketing perspective: **1. Performance: Winners & Laggards** * **Clear Winners:** Navy Blue and Black are the strongest performers, consistently showing the highest sales volume. Navy Blue in particular has strong peaks, suggesting a real pull with our customers. Black has a more steady demand, a solid base. * **Solid Performers:** Grey is doing decently well, with fluctuations, but a consistently positive volume. Brown also has decent, though lower, performance. * **Underperformers:** Grey Brown, Black Brown, and Navy Grey significantly lag behind in sales. Navy Grey is barely registering on the chart – this shade is a considerable concern and we need to understand why. **2. Understanding the Peaks & Dips - What's Happening in India?** * **Festival/Wedding Season (Oct-Dec):** The spike we see in Navy Blue, Black and Grey around October through December strongly suggests a link to festival and wedding seasons. People are buying new footwear for celebrations! This is *huge* for our marketing plans. * **New Year & Heat (Jan-Mar):** The dip in some colors after the New Year likely reflects settling back into routine after spending. The gradual uptick as we move towards March could be anticipating spring festivals or warmer weather. We should look at regional heat maps – perhaps sales accelerate sooner in warmer parts of India. * **Regional Events:** It’s difficult to pinpoint without more granular data, but smaller peaks in certain shades could be tied to regional festivals or events happening at those times. * **Potential Discount Timing:** The dips in some shades after a peak may indicate promotion end or discounts expiring. **3. Shades That Work Well Together - Bundling Opportunities** * **Navy Blue & Black:** These two show remarkably similar behavior. They peak and dip around the same times. *Definitely* explore bundling these – "Classic Comfort" or "Everyday Essentials" package. Promote them as complementing each other (one for celebrations, one for daily wear). * **Grey & Brown:** These shades have some correlation. They are not as strong as Navy and Black but could work together in a "Neutral Style" offering. * **Avoid Pairing Navy Grey**: As it barely sells, I would avoid marketing opportunities with this shade for the time being. **4. Geography - Where are Sales Differing?** This is where we *need* to dig deeper with our data. Here’s how geography likely influences sales: * **Metro Cities (Delhi, Mumbai, Bangalore, Kolkata):** We can expect higher volume across *all* shades in these areas. Trends will likely be faster, following newer fashion trends. Focus premium marketing efforts here. * **Tier 2/3 Cities:** Classic colors like Black and Navy will likely be far more popular than trendier shades. Marketing should focus on durability, value, and comfort. * **Humid Zones (Coastal Areas):** We need to see if specific shades perform better in humid climates – perhaps lighter, breathable-looking shades (though we don't have those here) are preferred. We should also determine whether the material is suitable for the climate. * **Dry Zones (Rajasthan, Gujarat):** Here, colours can be driven by local traditions, colours used for weddings and other cultural events. **5. Marketing & Product Strategies for India** * **Festival Focus:** *Aggressively* market Navy Blue, Black and Grey in the lead-up to major festivals (Diwali, Durga Puja, weddings, Holi). Run festival-themed campaigns. Pre-season discounts can work wonders. * **Regional Customization:** Tailor marketing messages and even product offerings to specific regions. What works in Delhi won’t necessarily work in Chennai. Explore regional color preferences. * **Bundling & Promotions:** Immediately implement the Navy Blue/Black and Grey/Brown bundle suggestions. Run promotions around these. * **Re-evaluate Underperformers:** We need to seriously question Grey Brown, Black Brown, and *especially* Navy Grey. * **Market Research:** Why aren’t they selling? Is it color perception? Do customers find them unattractive? * **Narrow Focus:** If they do have a small niche in specific areas, focus limited marketing there. * **Discontinue:** Be prepared to discontinue if they remain consistently poor performers. * **Colour Expansion**: Add more colours to the portfolio to take advantage of emerging trends. * **Material Science**: Ensure the footwear material is suitable for all types of climates in the country. * **Mobile-First Marketing:** India is a mobile-first market. Ensure all marketing is optimized for mobile devices. * **Influencer Marketing:** Partner with regional influencers to promote our footwear. To move forward, I'd recommend we pull sales data sliced by geography, demographics, and if possible, the source of the sale (online vs. retail store). This will give us a far more nuanced understanding of what's driving these trends and refine these strategies further.`;
@@ -104,7 +106,7 @@
 
 		const layout = {
 			title: "Item / Shade Sales",
-			margin: { t: 60, l: 60, r: 60, b: 60 },
+			margin: { t: 10, l: 40, r: 10, b: 60 },
 			xaxis: { title: "Date" },
 			yaxis: { title: "Sales" },
 		};
@@ -175,6 +177,56 @@
 				responsive: true,
 			},
 		);
+
+		try {
+			const res = await fetch(
+				`http://localhost:8000/api/itemshade/plotallshades/${selectedItem}`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ data: total_data }),
+				},
+			);
+
+			const result = await res.json();
+			const traces = [];
+
+			for (const shade in result.traces) {
+				traces.push({
+					x: result.traces[shade].x,
+					y: result.traces[shade].y,
+					mode: "lines",
+					name: shade,
+				});
+			}
+
+			(window as any).Plotly.newPlot(
+				"all-shades-plot",
+				traces,
+				{
+					title: `Day-wise Sales for All Shades - ${item_name}`,
+					xaxis: { title: "Purchase Date" },
+					yaxis: { title: "Sales" },
+					plot_bgcolor: "white",
+					paper_bgcolor: "white",
+					legend: {
+						x: 0.79,
+						y: 0.99,
+						bgcolor: "rgba(255,255,255,0.7)",
+						bordercolor: "black",
+						borderwidth: 1,
+					},
+					margin: { t: 10, l: 40, r: 10, b: 60 },
+				},
+				{
+					displayModeBar: false,
+					responsive: true,
+				},
+			);
+		} catch (error) {
+			console.error("aggFilterData fetching failed", error);
+			allShadesPlotUrl = "";
+		}
 	});
 
 	// Watch for selectedItem change and load matching shades
@@ -182,6 +234,7 @@
 		shadeItemSelected = true;
 		loadShades(selectedItem);
 		item_rank = calculateItemRank(selectedItem);
+		plotAllShades(selectedItem);
 	}
 
 	function toggleSales() {
@@ -316,8 +369,6 @@
 			aggFilteredData = await res.json();
 
 			plotAggSales(aggFilteredData);
-
-			console.log("received filtered data: ", aggFilteredData);
 		} catch (error) {
 			console.error("aggFilterData fetching failed", error);
 			aggFilteredData = [];
@@ -402,7 +453,7 @@
 
 		const layout = {
 			title: "Item / Shade Sales",
-			margin: { t: 60, l: 60, r: 60, b: 60 },
+			margin: { t: 10, l: 40, r: 10, b: 60 },
 			xaxis: { title: "Date" },
 			yaxis: { title: "Sales" },
 		};
@@ -411,6 +462,74 @@
 			displayModeBar: false,
 			responsive: true,
 		});
+	}
+
+	async function plotAllShades(item_name) {
+		const total_data = chupps_23_25_full.map((row) => ({
+			purDate: row.purDate,
+			shade: row.shade,
+			item: row.item,
+			sales: row.sales,
+		}));
+
+		try {
+			const res = await fetch(
+				`http://localhost:8000/api/itemshade/plotallshades/${item_name}`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ data: total_data }), // Make sure total_data is defined globally or passed as param
+				},
+			);
+
+			const result = await res.json();
+			const traces = [];
+
+			for (const shade in result.traces) {
+				traces.push({
+					x: result.traces[shade].x,
+					y: result.traces[shade].y,
+					mode: "lines",
+					name: shade,
+				});
+			}
+
+			// Wait for DOM to update (i.e., the {#if} block to render all-shades-plot)
+			await tick();
+
+			// Now it's safe to plot
+			const el = document.getElementById("all-shades-plot");
+			if (!el) {
+				console.error("all-shades-plot element not found in DOM.");
+				return;
+			}
+
+			(window as any).Plotly.newPlot(
+				"all-shades-plot",
+				traces,
+				{
+					title: `Day-wise Sales for All Shades - ${item_name}`,
+					xaxis: { title: "Purchase Date" },
+					yaxis: { title: "Sales" },
+					plot_bgcolor: "white",
+					paper_bgcolor: "white",
+					legend: {
+						x: 0.79,
+						y: 0.99,
+						bgcolor: "rgba(255,255,255,0.7)",
+						bordercolor: "black",
+						borderwidth: 1,
+					},
+					margin: { t: 10, l: 40, r: 10, b: 60 },
+				},
+				{
+					displayModeBar: false,
+					responsive: true,
+				},
+			);
+		} catch (error) {
+			console.error("Failed to fetch and plot all shades:", error);
+		}
 	}
 
 	async function getLLMResponse(item_name) {
@@ -469,6 +588,18 @@
 		const data = await response.json();
 
 		return data.access_token;
+	}
+
+	async function handleAllShadesClick() {
+		allShadeSalesVisible = !allShadeSalesVisible;
+
+		await tick();
+
+		if (allShadeSalesVisible) {
+			await plotAllShades(selectedItem);
+		} else {
+			plotAggSales(aggFilteredData); // <-- write this similar to plotAllShades
+		}
 	}
 
 	async function loadImagesFromDropbox(sku) {
@@ -658,8 +789,6 @@
 					class="w-full h-full z-100 relative"
 				></div>
 
-				<!-- Spans behind the table -->
-				<!-- Spans behind the table -->
 				<div class="flex flex-row gap-5 absolute -top-9 right-5 z-0">
 					<span
 						class="text2b text-white text-lg p-2 rounded-t-lg"
@@ -691,19 +820,49 @@
 		</div>
 
 		<div
-			class="col-start-2 col-span-2 row-start-0 row-span-2 flex gap-5 flex-row w-full h-full"
+			class="col-start-2 col-span-2 row-start-0 row-span-2 flex gap-3 flex-row w-full h-full"
 		>
 			<div
-				class="bg-white rounded-xl bxsdw p-5 border flex-3/4 border-gray-400"
+				class="bg-white rounded-xl bxsdw p-5 border overflow-hidden flex-3/4 items-center justify-center border-gray-400"
 				class:hidden={salesOff}
 			>
-				<span class="text-4xl">Sales Chart</span>
-				<div id="actual-plot" class="w-11/12 h-11/12 self-center"></div>
+				<div class="flex flex-row justify-between">
+					<span class="text-4xl">Sales Chart</span>
+					<!-- // if allShadeSalesVisible = false, then run this function and plotAllShades and display -->
+					<!-- //if allShadeSalesVisible = true, then use this button as toggle -->
+					<button
+						on:click={handleAllShadesClick}
+						class="w-fit z-200 border border-green-200 rounded-lg transition-all duration-100 ease-in-out active:scale-95 active:bg-green-800 flex flex-row px-3 text-sm justify-center gap-2 items-center shadow hover:shadow-md hover:scale-[102%] hover:bg-green-100 hover:text-green-600"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 640 512"
+							width="20"
+							height="20"
+							><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path
+								d="M416 0C352.3 0 256 32 256 32l0 128c48 0 76 16 104 32s56 32 104 32c56.4 0 176-16 176-96S512 0 416 0zM128 96c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64zM288 512c96 0 224-48 224-128s-119.6-96-176-96c-48 0-76 16-104 32s-56 32-104 32l0 128s96.3 32 160 32zM0 416c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64z"
+							/></svg
+						>
+						<span class="align-center text-xs">All Shades</span>
+					</button>
+				</div>
+
+				{#if !allShadeSalesVisible}
+					<div
+						id="actual-plot"
+						class="w-full h-full self-center"
+					></div>
+				{:else}
+					<div
+						id="all-shades-plot"
+						class="w-full h-full self-center"
+					></div>
+				{/if}
 			</div>
 
 			<!-- AI INSIGHTS  -->
 			<div
-				class="bg-white rounded-xl bxsdw border flex-3/4 border-gray-400 flex flex-col items-center justify-start"
+				class="bg-white rounded-xl bxsdw border flex-3/4 border-gray-400 flex flex-col items-center justify-start overflow-y-hidden"
 				class:hidden={!salesOff}
 			>
 				<!-- <span class="text-4xl ai-font">AI Insights</span> -->
@@ -820,3 +979,11 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	@reference "tailwindcss";
+
+	button {
+		@apply transition-all transform cursor-pointer active:scale-95 scale-100 duration-100 ease-in;
+	}
+</style>

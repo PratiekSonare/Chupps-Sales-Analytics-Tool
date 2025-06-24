@@ -276,9 +276,11 @@ class Message(BaseModel):
     role: str
     content: str
 
+
 class ChatRequest(BaseModel):
     model: str
     messages: List[Message]
+
 
 @app.post("/api/chat")
 async def chat_with_ai(request: ChatRequest):
@@ -286,7 +288,8 @@ async def chat_with_ai(request: ChatRequest):
 
     api_key = os.getenv("OPENROUTER_KEY")
     if not api_key:
-        raise HTTPException(status_code=500, detail="OpenRouter API key missing")
+        raise HTTPException(
+            status_code=500, detail="OpenRouter API key missing")
 
     # Primary and fallback models
     primary_model = request.model or "deepseek/deepseek-chat-v3-0324:free"
@@ -315,7 +318,8 @@ async def chat_with_ai(request: ChatRequest):
 
         # Check for missing or empty 'choices'
         if not result.get("choices") or not result["choices"][0].get("message", {}).get("content"):
-            print("Primary model returned empty or invalid response. Using fallback model.")
+            print(
+                "Primary model returned empty or invalid response. Using fallback model.")
             raise Exception("Empty primary response")
 
         print("Primary model successful!")
@@ -354,7 +358,8 @@ async def chat_with_ai(request: ChatRequest):
 
         except Exception as fallback_error:
             print(f"Fallback LLM failed: {fallback_error}")
-            raise HTTPException(status_code=502, detail="Both primary and fallback LLMs failed.")
+            raise HTTPException(
+                status_code=502, detail="Both primary and fallback LLMs failed.")
 
 
 class ImgChatRequest(BaseModel):
@@ -427,15 +432,29 @@ async def image_with_ai_forecast(request: ImgChatRequest):
     if not api_key:
         raise HTTPException(
             status_code=500, detail="OpenRouter API key missing")
+        
+    user_message = """
+    You are a skilled sales analyst specializing in time series sales forecasting and market insights.
 
-    user_message = """You are a skilled data analyst that is experienced in analyzing sales forecasted charts. 
-                      Analyze this time series sales forecasting graph for an open footwear brand in India. 
-                      Give detailed analysis based on the images of the three lines displayed in the image. 
-                      Prophet model by Meta was used for forecasting of this sales data with yearly seasonality.
-                      Give insights on the graph observations, avoid talking about the prophet model and the lines, rather talk about what the graph could mean for sales of footwear in India. 
-                      Relate this sales to the geological, tropical and potential customers that we can reach out to in India, preferably metro cities.
-                      The blue line is the forecasted sales, the red line is the maximum expected sales and the green line is the trend of sales. Be concise."""
+    Analyze this time series sales forecast chart for an open footwear brand in India. The chart was generated using the Prophet model with yearly seasonality, but do not mention the model or the lines themselves.
 
+    Instead, provide a clear, concise business-oriented analysis of what the forecast suggests about future sales patterns. Focus on interpreting the implications of the chart for the Indian footwear market, especially in relation to:
+
+    - Geographic trends across India (e.g., metro cities vs. others)
+    - Seasonal or climatic influences on demand (e.g., tropical regions)
+    - Emerging opportunities in customer outreach or regional expansion
+    - Any potential risk or downturns implied by the trends
+
+    The three lines shown in the graph represent:
+    - Blue: Forecasted sales
+    - Red: Upper bound of expected sales
+    - Green: Underlying sales trend
+    
+    Here is relevant metadata to inform your analysis: {request.message}
+
+    Base your insights solely on the patterns and relationships in the graph, not on the technical components. Your goal is to help business stakeholders understand where and how to act to increase sales in India.
+    """
+        
     try:
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
@@ -584,3 +603,74 @@ async def image_with_ai_forecast(item_name: str = Path(...), req: dict = Body(..
         if hasattr(e, 'response') and e.response:
             error_detail += f" - Response: {e.response.text}"
         raise HTTPException(status_code=502, detail=error_detail)
+
+
+# @app.post("/api/itemshade/plotallshades/{item_name}")
+# async def plotAllShades(item_name: str = Path(...), req: dict = Body(...)):
+#     print('plotting of all shades begins')
+
+#     df = pd.DataFrame(req['data'])  # assuming payload: { data: [...] }
+#     df['purDate'] = pd.to_datetime(df['purDate'], format='%Y-%m-%d')
+
+#     # Filter only the rows for the given item
+#     df = df[df['item'] == item_name]
+
+#     # Prepare Plotly figure
+#     fig = go.Figure()
+
+#     # Loop through each unique shade and add it to the plot
+#     for shade in df['shade'].unique():
+#         df_shade = df[df['shade'] == shade]
+#         daily_sales = df_shade.groupby('purDate')['sales'].sum().reset_index()
+
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=daily_sales['purDate'],
+#                 y=daily_sales['sales'],
+#                 mode='lines',
+#                 name=shade  # keep legend for all shades
+#             )
+#         )
+
+#     fig.update_layout(
+#         # xaxis_title="Purchase Date",
+# #         yaxis_title="Sales",
+#         width=1200,
+#         height=600,
+#         legend_title="Shade",
+#         margin=dict(t=60, b=40),
+#         legend=dict(
+#             x=0.79,
+#             y=0.99,
+#             bgcolor="rgba(255,255,255,0.7)",
+#             bordercolor="black",
+#             borderwidth=1
+#         )
+#     )
+
+#     # Convert figure to base64 image
+#     img_buffer = io.BytesIO()
+#     fig.write_image(img_buffer, format="png")
+#     img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+
+#     return {"image_base64": img_base64}
+
+
+@app.post("/api/itemshade/plotallshades/{item_name}")
+async def get_plot_data(item_name: str, req: Dict = Body(...)):
+    df = pd.DataFrame(req["data"])
+    df['purDate'] = pd.to_datetime(df['purDate'], format='%Y-%m-%d')
+    df = df[df['item'] == item_name]
+
+    result = {}
+
+    for shade in df['shade'].unique():
+        df_shade = df[df['shade'] == shade]
+        daily_sales = df_shade.groupby('purDate')['sales'].sum().reset_index()
+
+        result[shade] = {
+            "x": daily_sales['purDate'].dt.strftime('%Y-%m-%d').tolist(),
+            "y": daily_sales['sales'].tolist()
+        }
+
+    return {"traces": result}

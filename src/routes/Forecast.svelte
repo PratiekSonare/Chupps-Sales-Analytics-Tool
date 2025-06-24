@@ -181,7 +181,12 @@
 
     if (item_name || shade_name || (!item_name && !shade_name)) {
       try {
-        const response = await getLLMReponseGraph();
+
+                // Generate appropriate metadata
+        const curr_metadata = generateMetadata();
+        console.log("curr_metadata: ", curr_metadata);
+
+        const response = await getLLMReponseGraph(curr_metadata);
 
         renderedMarkdownGraph = marked(
           response || "Could not generate insights",
@@ -668,7 +673,7 @@
     }
   }
 
-  async function getLLMReponseGraph() {
+  async function getLLMReponseGraph(metadata) {
     filteredForecast = filterForecast(startDate, endDate);
 
     const data = filteredForecast.map((row) => ({
@@ -685,7 +690,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           data: data,
-          message: "Analyze this sales forecast graph", // Add default message
+          message: JSON.stringify(metadata, null, 2),
         }),
       });
 
@@ -717,11 +722,14 @@
     <div
       class="rounded-xl bxsdw absolute z-[250] p-5 w-1/2 h-3/4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-300 border border-gray-700"
     >
-      <button on:click={() => expand_llm_response = false} class="absolute top-8 right-10 text-2xl text-red-400">x</button>
+      <button
+        on:click={() => (expand_llm_response = false)}
+        class="absolute top-8 right-10 text-2xl text-red-400">x</button
+      >
 
       {#if activeButton === "data"}
         <div
-          class="border w-full h-full p-10 rounded-xl border-gray-400 bxsdw bg-gray-200 whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+          class="text2 border w-full h-full p-10 rounded-xl border-gray-400 bxsdw bg-gray-200 whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
         >
           {@html renderedMarkdown}
 
@@ -734,7 +742,7 @@
         </div>
       {:else}
         <div
-          class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+          class="text2 whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
         >
           {@html renderedMarkdownGraph}
 
@@ -1209,7 +1217,7 @@
 
         {#if activeButton === "data"}
           <div
-            class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+            class="text2 whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
           >
             {@html renderedMarkdown}
 
@@ -1222,7 +1230,7 @@
           </div>
         {:else}
           <div
-            class="whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
+            class="text2 whitespace-pre-wrap break-words max-w-full overflow-y-auto prose max-h-full group-hover:text-black"
           >
             {@html renderedMarkdownGraph}
 
@@ -1241,6 +1249,10 @@
 
 <style>
   @reference "tailwindcss";
+  
+  button {
+    @apply transition-all transform cursor-pointer active:scale-95 scale-100 duration-100 ease-in;
+  }
 
   .bxsdw {
     box-shadow:

@@ -1,20 +1,32 @@
 <script lang="ts">
 	export let data;
-	const { wo_centro_prophet, chupps_23_25_full, ranked_items_by_sales, ranked_shades_by_sales, total_sales, total_revenue, total_parties, chupps_items, chupps_shades, itemFilteredDB } = data;
+	const {
+		wo_centro_prophet,
+		chupps_23_25_full,
+		ranked_items_by_sales,
+		ranked_shades_by_sales,
+		total_sales,
+		total_revenue,
+		total_parties,
+		chupps_items,
+		chupps_shades,
+		itemFilteredDB,
+	} = data;
+
+	import { fade, slide } from "svelte/transition";
 
 	import Forecast from "./Forecast.svelte";
 	import Sidebar from "./sidebar/Sidebar.svelte";
 	import Home from "./Home.svelte";
 	import Data from "./Data.svelte";
-    import ItemShade from "./ItemShade.svelte";
-    import Regional from "./Regional.svelte";
+	import ItemShade from "./ItemShade.svelte";
+	import Regional from "./Regional.svelte";
 
 	let activeView = "home";
 
 	function handleView(view) {
 		activeView = view;
 	}
-	
 </script>
 
 <svelte:head>
@@ -29,8 +41,8 @@
 	</div>
 
 	<!-- Main content -->
-	<section class="flex-1 flex justify-center items-center h-full overflow-auto p-6">
-		{#if activeView === "home"}
+	<section class="flex-1 flex justify-center items-center h-full overflow-auto p-6" >
+		{#if activeView === "home"} 
 			<Home />
 		{:else if activeView === "data"}
 			<Data />
@@ -42,15 +54,44 @@
 			<Forecast {wo_centro_prophet} {chupps_23_25_full} total_sales={total_sales} total_revenue={total_revenue} total_parties={total_parties} chupps_items={chupps_items} chupps_shades={chupps_shades} />
 		{/if}
 	</section>
-</main>
 
+	<!-- <section
+		class="flex-1 flex justify-center items-center h-full overflow-auto p-6"
+	>
+		{#key activeView}
+			<svelte:component
+				this={activeView === "home"
+					? Home
+					: activeView === "data"
+						? Data
+						: activeView === "item-shade"
+							? ItemShade
+							: activeView === "regional"
+								? Regional
+								: activeView === "forecast"
+									? Forecast
+									: null}
+				in:fade={{ duration: 300 }}
+				out:fade={{ duration: 200 }}
+				{ranked_items_by_sales}
+				{ranked_shades_by_sales}
+				{chupps_23_25_full}
+				{wo_centro_prophet}
+				{total_sales}
+				{total_revenue}
+				{total_parties}
+				{chupps_items}
+				{chupps_shades}
+			/>
+		{/key}
+	</section> -->
+</main>
 
 <style>
 	@reference "tailwindcss";
-	
+
 	section {
 		margin: 0 !important;
 		padding: 0 !important;
 	}
-
 </style>

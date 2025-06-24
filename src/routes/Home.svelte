@@ -57,8 +57,16 @@
                         <ul class="list-disc">
                             Version
                             <li class="text2">
-                                Forecast section complete with Deepseek V03 0324
+                                "Forecast" complete with Deepseek V03 0324
                                 integration for meta-data analysis (16-06)
+                            </li>
+                            <li class="text2">
+                                "Item & Shade" complete with Google Gemma 3
+                                integration for shade analysis of an item (24-06)
+                            </li>
+                            <li class="text2">
+                                "Regional" complete with map integration
+                                integration for qualitative analysis of item sales (24-06)
                             </li>
                         </ul>
                     </div>
