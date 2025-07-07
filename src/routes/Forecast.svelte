@@ -8,9 +8,8 @@
   const formatNumber = format(",");
 
   export let wo_centro_prophet;
-  // export let non_zero_no_spikes_prophet;
-  // export let chupps_23_25_full;
   export let chupps_23_25_full;
+
   export let total_sales;
   export let total_revenue;
   export let total_parties;
@@ -491,7 +490,7 @@
     const layoutForecast = {
       title: "Forecast",
       height: 350,
-      margin: { t: 50, l: 50, r: 50, b: 50 },
+      margin: { t: 50, l: 60, r: 50, b: 20 },
       xaxis: { title: "Date" },
       yaxis: { title: "Sales" },
     };
@@ -983,7 +982,7 @@
 
     <!-- //if setOpen = true, then change row-start-2 to row-start-1 -->
     <div
-      class={`card bxsdw col-start-3 row-start-2 row-end-3 flex flex-col py-2`}
+      class={`card bxsdw col-start-3 row-start-2 row-end-3 flex flex-col pt-2`}
     >
       <span>Data Input</span>
       <div id="forecast-table" class="w-full h-full"></div>

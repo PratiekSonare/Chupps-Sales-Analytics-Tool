@@ -6,6 +6,7 @@
 	import { tweened } from "svelte/motion";
 	import { onMount, tick } from "svelte";
 	import { cubicOut } from "svelte/easing";
+	import ChuppsButton from "./ChuppsButton.svelte";
 
 	// Create tweened stores
 	const animatedItemRank = tweened(0, { duration: 2000, easing: cubicOut });
@@ -668,7 +669,7 @@
 			index: "2",
 			rule: "To ensure that future footwear images align with the given mentioned sku, please add images according to SKU in the dedicated DropBox folder mentioned below with the (Folder Name) as {Product-SKU}",
 			code: "https://www.dropbox.com/home/Apps/Chupps-SA-Tool/all-products-dump",
-		}
+		},
 	];
 </script>
 
@@ -780,6 +781,7 @@
 					{#if images.length > 0}
 						<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
 							{#each images as image}
+								<!-- svelte-ignore a11y_img_redundant_alt -->
 								<img
 									src={image}
 									alt="Product image"
@@ -825,8 +827,9 @@
 		<div
 			class="col-start-2 p-5 col-span-3 row-start-3 row-span-2 bg-white rounded-xl bxsdw border border-gray-300 overflow-hidden"
 		>
-			<div class="w-full flex items-start justify-between">
-				<span class="text-4xl">Sales Data</span>
+			<div class="flex flex-row gap-5 -mt-5 mb-5">
+				<ChuppsButton />
+				<span class="mt-5 text-center text-3xl">Sales Data</span>
 			</div>
 			<div class="relative">
 				<div
@@ -872,11 +875,15 @@
 				class:hidden={salesOff}
 			>
 				<div class="flex flex-row justify-between">
-					<span class="text-4xl">Sales Chart</span>
+					<div class="flex flex-row gap-5 -mt-5 mb-5">
+						<ChuppsButton />
+						<span class="mt-5 text-center text-3xl"
+							>Sales Chart</span
+						>
+					</div>
 
 					<!-- svelte-ignore a11y_consider_explicit_label -->
 					<div class="flex flex-row gap-3 items-center">
-
 						<button
 							on:click={handleAllShadesClick}
 							class="w-fit h-fit z-200 border border-green-200 rounded-lg transition-all duration-100 ease-in-out active:scale-95 active:bg-green-800 flex flex-row p-2 text-[8px] justify-center gap-2 items-center shadow hover:shadow-md hover:scale-[102%] hover:bg-green-100 hover:text-green-600"
@@ -895,7 +902,7 @@
 								>All Shades</span
 							>
 						</button>
-				
+
 						<button
 							on:click={() => (infoOpen = !infoOpen)}
 							class="text-gray-500 hover:text-black"
@@ -914,19 +921,18 @@
 								></path>
 							</svg>
 						</button>
-
 					</div>
 				</div>
 
 				{#if !allShadeSalesVisible}
 					<div
 						id="actual-plot"
-						class="w-full h-full self-center"
+						class="h-11/12 w-11/12 self-center"
 					></div>
 				{:else}
 					<div
 						id="all-shades-plot"
-						class="w-full h-full self-center"
+						class="w-11/12 h-11/12 self-center"
 					></div>
 				{/if}
 			</div>

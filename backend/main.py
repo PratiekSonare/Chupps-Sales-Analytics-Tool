@@ -653,7 +653,7 @@ async def bestShade(req: Dict = Body(...)):
     greater_support = support_desc[support_desc['support'] > 0.5]
 
     greater_support['len'] = greater_support['itemsets'].apply(lambda x: len(x))
-    pair_great_sup = greater_support[(greater_support['len'] == 2)]
+    pair_great_sup = greater_support[(greater_support['len'] == 2)].copy()
     
     # Convert itemsets into two separate columns
     pair_great_sup[['shade1', 'shade2']] = pair_great_sup['itemsets'].apply(
