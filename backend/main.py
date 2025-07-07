@@ -13,6 +13,11 @@ from prophet import Prophet
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import json
+from mlxtend.frequent_patterns import apriori, association_rules
+from mlxtend.preprocessing import TransactionEncoder
+from tensorflow.keras.models import load_model
+import joblib
+import numpy as np
 
 load_dotenv(".env.local")
 
@@ -432,7 +437,7 @@ async def image_with_ai_forecast(request: ImgChatRequest):
     if not api_key:
         raise HTTPException(
             status_code=500, detail="OpenRouter API key missing")
-        
+
     user_message = """
     You are a skilled sales analyst specializing in time series sales forecasting and market insights.
 
@@ -454,7 +459,7 @@ async def image_with_ai_forecast(request: ImgChatRequest):
 
     Base your insights solely on the patterns and relationships in the graph, not on the technical components. Your goal is to help business stakeholders understand where and how to act to increase sales in India.
     """
-        
+
     try:
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
@@ -605,57 +610,6 @@ async def image_with_ai_forecast(item_name: str = Path(...), req: dict = Body(..
         raise HTTPException(status_code=502, detail=error_detail)
 
 
-# @app.post("/api/itemshade/plotallshades/{item_name}")
-# async def plotAllShades(item_name: str = Path(...), req: dict = Body(...)):
-#     print('plotting of all shades begins')
-
-#     df = pd.DataFrame(req['data'])  # assuming payload: { data: [...] }
-#     df['purDate'] = pd.to_datetime(df['purDate'], format='%Y-%m-%d')
-
-#     # Filter only the rows for the given item
-#     df = df[df['item'] == item_name]
-
-#     # Prepare Plotly figure
-#     fig = go.Figure()
-
-#     # Loop through each unique shade and add it to the plot
-#     for shade in df['shade'].unique():
-#         df_shade = df[df['shade'] == shade]
-#         daily_sales = df_shade.groupby('purDate')['sales'].sum().reset_index()
-
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=daily_sales['purDate'],
-#                 y=daily_sales['sales'],
-#                 mode='lines',
-#                 name=shade  # keep legend for all shades
-#             )
-#         )
-
-#     fig.update_layout(
-#         # xaxis_title="Purchase Date",
-# #         yaxis_title="Sales",
-#         width=1200,
-#         height=600,
-#         legend_title="Shade",
-#         margin=dict(t=60, b=40),
-#         legend=dict(
-#             x=0.79,
-#             y=0.99,
-#             bgcolor="rgba(255,255,255,0.7)",
-#             bordercolor="black",
-#             borderwidth=1
-#         )
-#     )
-
-#     # Convert figure to base64 image
-#     img_buffer = io.BytesIO()
-#     fig.write_image(img_buffer, format="png")
-#     img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
-
-#     return {"image_base64": img_base64}
-
-
 @app.post("/api/itemshade/plotallshades/{item_name}")
 async def get_plot_data(item_name: str, req: Dict = Body(...)):
     df = pd.DataFrame(req["data"])
@@ -674,3 +628,119 @@ async def get_plot_data(item_name: str, req: Dict = Body(...)):
         }
 
     return {"traces": result}
+
+# APRIORI ALGORITHM
+
+
+@app.post("/api/bestshade")
+async def bestShade(req: Dict = Body(...)):
+
+    df = pd.DataFrame(req["data"])
+    df['purDate'] = pd.to_datetime(df['purDate'], format='%Y-%m-%d')
+
+    daily_sales = df.groupby(['purDate', 'shade'])['sales'].sum().reset_index()
+
+    daily_sales['sold'] = daily_sales['sales'] >= 1
+    transaction_df = daily_sales[daily_sales['sold']].pivot_table(
+        index='purDate',
+        columns='shade',
+        values='sold',
+        fill_value=0
+    )
+
+    frequent_itemsets = apriori(transaction_df, min_support=0.3, use_colnames=True)
+    support_desc = frequent_itemsets.sort_values(by='support', ascending=False)
+    greater_support = support_desc[support_desc['support'] > 0.5]
+
+    greater_support['len'] = greater_support['itemsets'].apply(lambda x: len(x))
+    pair_great_sup = greater_support[(greater_support['len'] == 2)]
+    
+    # Convert itemsets into two separate columns
+    pair_great_sup[['shade1', 'shade2']] = pair_great_sup['itemsets'].apply(
+        lambda x: pd.Series(list(x))
+    )
+
+    # Return only the columns needed
+    return pair_great_sup[['shade1', 'shade2', 'support']].to_dict(orient='records')
+
+@app.post('/predict')
+async def predict(req: Dict = Body(...)):
+    df = pd.DataFrame(req["data"])
+    
+    df = df[['Payment Method', 'Lineitem sku', 'Lineitem price', 'Shipping Zip', 'Shipping City', 'Shipping Province']]
+
+    # --- Data cleaning ---
+    df['Payment Method'] = df['Payment Method'].fillna('Other')
+    df['Payment Method'] = df['Payment Method'].replace({
+        'Cash on Delivery (COD)': 'COD',
+        'Other': 'PREPAID',
+        '1Razorpay - UPI, Cards, Wallets, NB': 'PREPAID',
+        '1Cashfree Payments(UPI,Cards,Net Banking,Wallets)': 'PREPAID',
+        'manual': 'PREPAID',
+        '1Razorpay - UPI, Cards, Wallets, NB + Cash on Delivery (COD)': 'PREPAID'
+    })
+    df['Shipping Zip'] = df['Shipping Zip'].astype(str).str.lstrip("'")
+    df['Lineitem price'] = df['Lineitem price'].replace({
+        649.0: 699.0, 849.0: 899.0, 949.0: 999.0, 1049.0: 1099.0, 749.0: 799.0
+    })
+    df['Shipping City'] = df['Shipping City'].str.lower()
+
+    # --- Load label and ratio maps from Supabase ---
+    urls = {
+        'pmethod' :  'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pmethod_label_mapping.json',
+        'state'   : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//state_label_mapping.json',
+        'sku'     : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//sku_cancel_ratios.json',
+        'city'    : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//city_cancel_ratios.json',
+        'pincode' : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pincode_cancel_ratios.json',
+        'price'   : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//price_cancel_ratios.json'
+    }
+
+    def fetch_map(url, key_field=None, value_field=None):
+        resp = requests.get(url)
+        data = resp.json()
+        # print(data)
+        return data
+
+    def fetch_map_dict(url, key_field, value_field):
+        resp = requests.get(url)
+        data = resp.json()
+        # print(data)
+        return {item[key_field]: item[value_field] for item in data}
+    
+    pmethod_map = fetch_map(urls["pmethod"])
+    state_map   = fetch_map(urls["state"])
+    sku_map     = fetch_map_dict(urls["sku"], "product_sku", "scr")
+    city_map    = fetch_map_dict(urls["city"], "city", "ccr")
+    pincode_map = fetch_map_dict(urls["pincode"], "pincode", "pcr")
+    price_map   = fetch_map_dict(urls["price"], "product_price", "prcr")
+    
+    # --- Transform df using maps ---
+    mean_pcr = np.mean(list(pincode_map.values()))
+    mean_scr = np.mean(list(sku_map.values()))
+    mean_ccr = np.mean(list(city_map.values()))
+    mean_prcr = np.mean(list(price_map.values()))
+    
+    # df['payment_method'] = df['Payment Method'].map(pmethod_map).fillna(-1)
+    # df['state'] = df['Shipping Province'].map(state_map).fillna(-1)
+    # df['scr'] = df['Lineitem sku'].map(sku_map).fillna(mean_scr)
+    # df['ccr'] = df['Shipping City'].map(city_map).fillna(mean_ccr)
+    # df['pcr'] = df['Shipping Zip'].map(pincode_map).fillna(mean_pcr)
+    # df['prcr'] = df['Lineitem price'].map(price_map).fillna(mean_prcr)
+
+    df['payment_method'] = df['Payment Method'].map(pmethod_map).fillna(-1)
+    df['state'] = df['Shipping Province'].map(state_map).fillna(-1)
+    df['scr'] = df['Lineitem sku'].map(sku_map).fillna(0.0)
+    df['ccr'] = df['Shipping City'].map(city_map).fillna(0.0)
+    df['pcr'] = df['Shipping Zip'].map(pincode_map).fillna(0.0)
+    df['prcr'] = df['Lineitem price'].map(price_map).fillna(0.0)
+    
+    # Final numeric DataFrame
+    scaler = joblib.load("model/scaler.joblib")
+    features_df = df[['payment_method', 'scr', 'ccr', 'pcr', 'prcr', 'state']]
+    features_scaled = scaler.transform(features_df)
+
+    # --- Model prediction ---
+    model = load_model("model/risk_model_nn.keras")
+    proba = model.predict(features_scaled)[0][0]
+
+    return {"risk_score": float(proba)}

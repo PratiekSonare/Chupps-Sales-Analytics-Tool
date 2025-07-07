@@ -66,6 +66,7 @@
   let anDone = 0;
   let expand_rotate = false;
   let expand_llm_response = false;
+  let bestShades = [];
 
   let item_sales_data = wo_centro_prophet;
   let currentSalesData = wo_centro_prophet; // default (global data)
@@ -181,8 +182,7 @@
 
     if (item_name || shade_name || (!item_name && !shade_name)) {
       try {
-
-                // Generate appropriate metadata
+        // Generate appropriate metadata
         const curr_metadata = generateMetadata();
         console.log("curr_metadata: ", curr_metadata);
 
@@ -221,6 +221,7 @@
 
     filteredForecast = filterForecast(startDate, endDate);
     plotForecast(filteredForecast);
+    bestShadeComb();
   });
 
   async function itemChosenForForecast(item) {
@@ -505,6 +506,7 @@
         font: { family: "Arial", size: 12, color: "black" },
       },
       cells: {
+        line: { width: 1, color: "lightgray" },
         values: [
           dataToPlot.map((d) => d.ds.split("T")[0]),
           dataToPlot.map((d) => d.yhat.toFixed(2)),
@@ -710,6 +712,47 @@
       console.error(`Failed to call graph api:`, error);
       return "Error analyzing graph data";
     }
+  }
+
+  async function bestShadeComb() {
+    const data = chupps_23_25_full.map((row) => ({
+      purDate: row.purDate,
+      shade: row.shade,
+      sales: row.sales,
+    }));
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/bestshade`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data }),
+      });
+
+      bestShades = await res.json();
+      renderBestShadesTable(bestShades);
+    } catch (error) {
+      console.error("error faced: ", error);
+    }
+  }
+
+  function renderBestShadesTable(data) {
+    const bestShadesTable = {
+      type: "table",
+      header: {
+        values: ["First Shade", "Second Shade", "Support"],
+        align: "center",
+        line: { width: 1, color: "black" },
+        fill: { color: "lightgray" },
+        font: { family: "Arial", size: 12, color: "black" },
+      },
+      cells: {
+        values: [data.map((d) => d.shade1), data.map((d) => d.shade2), data.map((d) => d.support)],
+        align: "left",
+        line: { color: "black", width: 1 },
+        font: { family: "Arial", size: 11, color: ["black"] },
+        height: 24,
+      },
+    };
   }
 </script>
 
@@ -1098,9 +1141,24 @@
     </div>
 
     <div
-      class="flex flex-col bxsdw justify-start rounded-xl items-center h-full col-start-4 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
+      class="flex flex-col bxsdw justify-start rounded-xl items-center h-full col-start-4 row-end-3 overflow-y-auto overflow-x-hidden py-2 px-2 bg-white"
       class:row-start-1={!setOpen}
       class:row-start-2={setOpen}
+    >
+      <div class="flex w-full flex-col justify-center items-center">
+        <span class="">Best Shade Combinations</span>
+        <span class="text-gray-400 text-[10px] -mt-1"
+          >(in the selected timeframe)</span
+        >
+        <div id="best-shades-table" class="w-full h-full"></div>
+      </div>
+      <!-- <img src="/chupps-ai.svg" alt="chupps ai logo" class="w-[30%]" /> -->
+
+      <!-- <div class="bg-gray-300 w-3/4 h-[2px] my-3 rounded-xl"></div> -->
+    </div>
+
+    <div
+      class="flex flex-col bxsdw justify-start rounded-xl items-center h-full col-start-4 row-start-3 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
     >
       <!-- <span class="font-semibold text-2xl ai-font">AI Insights</span> -->
       <img src="/chupps-ai.svg" alt="chupps ai logo" class="w-[30%]" />
@@ -1249,7 +1307,7 @@
 
 <style>
   @reference "tailwindcss";
-  
+
   button {
     @apply transition-all transform cursor-pointer active:scale-95 scale-100 duration-100 ease-in;
   }

@@ -34,6 +34,12 @@ html, body {
 	font-style: normal;
 }
 
+.textlight {
+	font-family: "DM Sans", sans-serif;
+	font-weight: 200;
+	font-style: normal;
+}
+
 .textl {
 	font-family: "DM Sans", sans-serif;
 	font-weight: 400;

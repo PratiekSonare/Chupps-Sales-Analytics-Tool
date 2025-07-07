@@ -40,6 +40,7 @@
 	let shadeItemSelected = false;
 	let thinking = false;
 	let allShadeSalesVisible = false;
+	let infoOpen = false;
 
 	// let llmResponse = "Loading...";
 	let llmResponse = `Okay, let's break down these sales figures for our open footwear in India. Here’s what I'm seeing, thinking from a product and marketing perspective: **1. Performance: Winners & Laggards** * **Clear Winners:** Navy Blue and Black are the strongest performers, consistently showing the highest sales volume. Navy Blue in particular has strong peaks, suggesting a real pull with our customers. Black has a more steady demand, a solid base. * **Solid Performers:** Grey is doing decently well, with fluctuations, but a consistently positive volume. Brown also has decent, though lower, performance. * **Underperformers:** Grey Brown, Black Brown, and Navy Grey significantly lag behind in sales. Navy Grey is barely registering on the chart – this shade is a considerable concern and we need to understand why. **2. Understanding the Peaks & Dips - What's Happening in India?** * **Festival/Wedding Season (Oct-Dec):** The spike we see in Navy Blue, Black and Grey around October through December strongly suggests a link to festival and wedding seasons. People are buying new footwear for celebrations! This is *huge* for our marketing plans. * **New Year & Heat (Jan-Mar):** The dip in some colors after the New Year likely reflects settling back into routine after spending. The gradual uptick as we move towards March could be anticipating spring festivals or warmer weather. We should look at regional heat maps – perhaps sales accelerate sooner in warmer parts of India. * **Regional Events:** It’s difficult to pinpoint without more granular data, but smaller peaks in certain shades could be tied to regional festivals or events happening at those times. * **Potential Discount Timing:** The dips in some shades after a peak may indicate promotion end or discounts expiring. **3. Shades That Work Well Together - Bundling Opportunities** * **Navy Blue & Black:** These two show remarkably similar behavior. They peak and dip around the same times. *Definitely* explore bundling these – "Classic Comfort" or "Everyday Essentials" package. Promote them as complementing each other (one for celebrations, one for daily wear). * **Grey & Brown:** These shades have some correlation. They are not as strong as Navy and Black but could work together in a "Neutral Style" offering. * **Avoid Pairing Navy Grey**: As it barely sells, I would avoid marketing opportunities with this shade for the time being. **4. Geography - Where are Sales Differing?** This is where we *need* to dig deeper with our data. Here’s how geography likely influences sales: * **Metro Cities (Delhi, Mumbai, Bangalore, Kolkata):** We can expect higher volume across *all* shades in these areas. Trends will likely be faster, following newer fashion trends. Focus premium marketing efforts here. * **Tier 2/3 Cities:** Classic colors like Black and Navy will likely be far more popular than trendier shades. Marketing should focus on durability, value, and comfort. * **Humid Zones (Coastal Areas):** We need to see if specific shades perform better in humid climates – perhaps lighter, breathable-looking shades (though we don't have those here) are preferred. We should also determine whether the material is suitable for the climate. * **Dry Zones (Rajasthan, Gujarat):** Here, colours can be driven by local traditions, colours used for weddings and other cultural events. **5. Marketing & Product Strategies for India** * **Festival Focus:** *Aggressively* market Navy Blue, Black and Grey in the lead-up to major festivals (Diwali, Durga Puja, weddings, Holi). Run festival-themed campaigns. Pre-season discounts can work wonders. * **Regional Customization:** Tailor marketing messages and even product offerings to specific regions. What works in Delhi won’t necessarily work in Chennai. Explore regional color preferences. * **Bundling & Promotions:** Immediately implement the Navy Blue/Black and Grey/Brown bundle suggestions. Run promotions around these. * **Re-evaluate Underperformers:** We need to seriously question Grey Brown, Black Brown, and *especially* Navy Grey. * **Market Research:** Why aren’t they selling? Is it color perception? Do customers find them unattractive? * **Narrow Focus:** If they do have a small niche in specific areas, focus limited marketing there. * **Discontinue:** Be prepared to discontinue if they remain consistently poor performers. * **Colour Expansion**: Add more colours to the portfolio to take advantage of emerging trends. * **Material Science**: Ensure the footwear material is suitable for all types of climates in the country. * **Mobile-First Marketing:** India is a mobile-first market. Ensure all marketing is optimized for mobile devices. * **Influencer Marketing:** Partner with regional influencers to promote our footwear. To move forward, I'd recommend we pull sales data sliced by geography, demographics, and if possible, the source of the sale (online vs. retail store). This will give us a far more nuanced understanding of what's driving these trends and refine these strategies further.`;
@@ -656,12 +657,57 @@
 		const data = await res.json();
 		return data.link; // usable temporary URL
 	}
+
+	let rules = [
+		{
+			index: "1",
+			rule: "The images are displayed and filtered using <strong>PRODUCT SKU</strong> ONLY!",
+			code: "",
+		},
+		{
+			index: "2",
+			rule: "To ensure that future footwear images align with the given mentioned sku, please add images according to SKU in the dedicated DropBox folder mentioned below with the (Folder Name) as {Product-SKU}",
+			code: "https://www.dropbox.com/home/Apps/Chupps-SA-Tool/all-products-dump",
+		}
+	];
 </script>
 
-<div class="w-screen h-screen">
+<div class="w-screen h-screen relative">
+	{#if infoOpen}
+		<div
+			class="rounded-xl bxsdw absolute overflow-y-auto z-[250] p-5 w-1/2 h-3/4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-300 border border-gray-700"
+		>
+			<button
+				on:click={() => (infoOpen = false)}
+				class="absolute top-8 right-10 text-2xl text-red-400 hover:text-red-600"
+				>x</button
+			>
+
+			<div class="mt-10"></div>
+
+			{#each rules as content}
+				<div
+					class="flex flex-col items-center justify-start h-fit text2 p-5 mt-1"
+				>
+					<span class="text-3xl">{content.index}.</span>
+					<span class="text-center">{@html content.rule}</span>
+					{#if content.code !== ""}
+						<div
+							class=" mt-2 h-[250px] w-full overflow-y-scroll bg-white rounded-xl text-xs p-3"
+						>
+							<span class="text-left font-mono"
+								>{@html content.code}</span
+							>
+						</div>
+					{/if}
+				</div>
+			{/each}
+		</div>
+	{/if}
+
 	<div class="grid grid-cols-3 grid-rows-4 gap-3 h-full p-5">
 		<div
-			class="col-span-1 overflow-y-auto row-span-4 bg-white rounded-xl p-5 h-full bxsdw border border-gray-400"
+			class="col-span-1 overflow-y-auto row-span-4 bg-white rounded-xl p-5 h-full bxsdw border border-gray-300"
 		>
 			<div class="grid grid-rows-[1fr_2fr] gap-5 h-full">
 				<div class="flex flex-col gap-2">
@@ -671,7 +717,7 @@
 					>
 						<p class="text-4xl">Item:</p>
 						<select
-							class="border bg-amber-300 border-gray-400 rounded h-fit p-1 w-full"
+							class="border bg-amber-300 border-gray-300 rounded h-fit p-1 w-full"
 							bind:value={selectedItem}
 						>
 							<option disabled selected value=""
@@ -688,7 +734,7 @@
 					>
 						<p class="text-4xl">Shade:</p>
 						<select
-							class="border bg-red-400 border-gray-400 w-full rounded h-fit p-1"
+							class="border bg-red-400 border-gray-300 w-full rounded h-fit p-1"
 							bind:value={selectedShade}
 						>
 							<option disabled selected value=""
@@ -737,7 +783,7 @@
 								<img
 									src={image}
 									alt="Product image"
-									class="rounded shadow-lg hover:scale-125 transition-all ease-in-out duration-200 border border-gray-400 hover:shadow-2xl"
+									class="rounded shadow-lg hover:scale-125 transition-all ease-in-out duration-200 border border-gray-300 hover:shadow-2xl"
 								/>
 							{/each}
 						</div>
@@ -777,13 +823,12 @@
 		</div>
 
 		<div
-			class="col-start-2 p-5 col-span-3 row-start-3 row-span-2 bg-white rounded-xl bxsdw border border-gray-400 overflow-hidden"
+			class="col-start-2 p-5 col-span-3 row-start-3 row-span-2 bg-white rounded-xl bxsdw border border-gray-300 overflow-hidden"
 		>
 			<div class="w-full flex items-start justify-between">
 				<span class="text-4xl">Sales Data</span>
 			</div>
 			<div class="relative">
-				<!-- Table on top -->
 				<div
 					id="sales-table"
 					class="w-full h-full z-100 relative"
@@ -823,28 +868,54 @@
 			class="col-start-2 col-span-2 row-start-0 row-span-2 flex gap-3 flex-row w-full h-full"
 		>
 			<div
-				class="bg-white rounded-xl bxsdw p-5 border overflow-hidden flex-3/4 items-center justify-center border-gray-400"
+				class="bg-white rounded-xl bxsdw p-5 border overflow-hidden flex-3/4 items-center justify-center border-gray-300"
 				class:hidden={salesOff}
 			>
 				<div class="flex flex-row justify-between">
 					<span class="text-4xl">Sales Chart</span>
-					<!-- // if allShadeSalesVisible = false, then run this function and plotAllShades and display -->
-					<!-- //if allShadeSalesVisible = true, then use this button as toggle -->
-					<button
-						on:click={handleAllShadesClick}
-						class="w-fit z-200 border border-green-200 rounded-lg transition-all duration-100 ease-in-out active:scale-95 active:bg-green-800 flex flex-row px-3 text-sm justify-center gap-2 items-center shadow hover:shadow-md hover:scale-[102%] hover:bg-green-100 hover:text-green-600"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							viewBox="0 0 640 512"
-							width="20"
-							height="20"
-							><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path
-								d="M416 0C352.3 0 256 32 256 32l0 128c48 0 76 16 104 32s56 32 104 32c56.4 0 176-16 176-96S512 0 416 0zM128 96c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64zM288 512c96 0 224-48 224-128s-119.6-96-176-96c-48 0-76 16-104 32s-56 32-104 32l0 128s96.3 32 160 32zM0 416c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64z"
-							/></svg
+
+					<!-- svelte-ignore a11y_consider_explicit_label -->
+					<div class="flex flex-row gap-3 items-center">
+
+						<button
+							on:click={handleAllShadesClick}
+							class="w-fit h-fit z-200 border border-green-200 rounded-lg transition-all duration-100 ease-in-out active:scale-95 active:bg-green-800 flex flex-row p-2 text-[8px] justify-center gap-2 items-center shadow hover:shadow-md hover:scale-[102%] hover:bg-green-100 hover:text-green-600"
 						>
-						<span class="align-center text-xs">All Shades</span>
-					</button>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 640 512"
+								width="16"
+								height="16"
+								class="fill-current"
+								><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path
+									d="M416 0C352.3 0 256 32 256 32l0 128c48 0 76 16 104 32s56 32 104 32c56.4 0 176-16 176-96S512 0 416 0zM128 96c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64zM288 512c96 0 224-48 224-128s-119.6-96-176-96c-48 0-76 16-104 32s-56 32-104 32l0 128s96.3 32 160 32zM0 416c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64z"
+								/></svg
+							>
+							<span class="align-center text-[12px]"
+								>All Shades</span
+							>
+						</button>
+				
+						<button
+							on:click={() => (infoOpen = !infoOpen)}
+							class="text-gray-500 hover:text-black"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								x="0px"
+								y="0px"
+								width="24"
+								height="24"
+								class="fill-current"
+								viewBox="0 0 24 24"
+							>
+								<path
+									d="M 12 2 C 6.4889971 2 2 6.4889971 2 12 C 2 17.511003 6.4889971 22 12 22 C 17.511003 22 22 17.511003 22 12 C 22 6.4889971 17.511003 2 12 2 z M 12 4 C 16.430123 4 20 7.5698774 20 12 C 20 16.430123 16.430123 20 12 20 C 7.5698774 20 4 16.430123 4 12 C 4 7.5698774 7.5698774 4 12 4 z M 11 7 L 11 9 L 13 9 L 13 7 L 11 7 z M 11 11 L 11 17 L 13 17 L 13 11 L 11 11 z"
+								></path>
+							</svg>
+						</button>
+
+					</div>
 				</div>
 
 				{#if !allShadeSalesVisible}
@@ -862,7 +933,7 @@
 
 			<!-- AI INSIGHTS  -->
 			<div
-				class="bg-white rounded-xl bxsdw border flex-3/4 border-gray-400 flex flex-col items-center justify-start overflow-y-hidden"
+				class="bg-white rounded-xl bxsdw border flex-3/4 border-gray-300 flex flex-col items-center justify-start overflow-y-hidden"
 				class:hidden={!salesOff}
 			>
 				<!-- <span class="text-4xl ai-font">AI Insights</span> -->
@@ -885,7 +956,7 @@
 			</div>
 
 			<div
-				class=" bg-white rounded-xl bxsdw border flex-1/4 border-gray-400"
+				class=" bg-white rounded-xl bxsdw border flex-1/4 border-gray-300"
 			>
 				<div
 					class="flex flex-col py-2 items-center justify-center gap-0 mt-auto"

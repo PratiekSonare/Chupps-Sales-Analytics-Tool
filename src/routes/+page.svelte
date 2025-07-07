@@ -3,6 +3,7 @@
 	const {
 		wo_centro_prophet,
 		chupps_23_25_full,
+		ml_train_data,
 		ranked_items_by_sales,
 		ranked_shades_by_sales,
 		total_sales,
@@ -21,6 +22,7 @@
 	import Data from "./Data.svelte";
 	import ItemShade from "./ItemShade.svelte";
 	import Regional from "./Regional.svelte";
+	import Risk from './RiskScore.svelte';
 
 	let activeView = "home";
 
@@ -52,6 +54,8 @@
 			<Regional {ranked_items_by_sales} {ranked_shades_by_sales} {chupps_23_25_full} />
 		{:else if activeView === "forecast"}
 			<Forecast {wo_centro_prophet} {chupps_23_25_full} total_sales={total_sales} total_revenue={total_revenue} total_parties={total_parties} chupps_items={chupps_items} chupps_shades={chupps_shades} />
+		{:else if activeView === "risk-score"}
+			<Risk {ml_train_data} />
 		{/if}
 	</section>
 
