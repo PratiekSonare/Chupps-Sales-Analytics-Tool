@@ -936,8 +936,7 @@ async def clean(file: UploadFile = File(...)):
     df = pd.read_excel(BytesIO(contents), header=2)
 
     df = df[['BILL DATE', 'NET QTY', 'SUB CATEGORY']]
-    df.rename(columns={'BILL DATE': 'ds', 'NET QTY': 'y',
-              'SUB CATEGORY': 'item'}, inplace=True)
+    df.rename(columns={'BILL DATE': 'ds', 'NET QTY': 'y', 'SUB CATEGORY': 'item'}, inplace=True)
     df.dropna(inplace=True)
     discard_items = ['750X550X335 5PLY CARTON', '320X130X120MM INNER BOX',
                      '100X60MM TAG', 'FOOTWEAR SOLE EVA', 'ASSORTED']

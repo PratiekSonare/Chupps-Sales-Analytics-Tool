@@ -6,7 +6,7 @@ export async function POST({ request }) {
   const newRows = await request.json();
 
   const { data, error } = await supabase
-    .from('prod_1')
+    .from('prod_1_agg')
     .insert(newRows);
 
   if (error) {

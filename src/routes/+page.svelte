@@ -4,6 +4,7 @@
 		wo_centro_prophet,
 		chupps_23_25_full,
 		ml_train_data,
+		curr_max_data,
 		ranked_items_by_sales,
 		ranked_shades_by_sales,
 		total_sales,
@@ -18,7 +19,7 @@
 	import Forecast from "./Forecast.svelte";
 	import Sidebar from "./sidebar/Sidebar.svelte";
 	import Home from "./Home.svelte";
-	import Data from "./data/Data.svelte";
+	import Data from "./Data.svelte";
 	import ItemShade from "./ItemShade.svelte";
 	import Regional from "./Regional.svelte";
 	import Risk from "./RiskScore.svelte";
@@ -66,7 +67,7 @@
 				{#if activeView === "home"}
 					<Home />
 				{:else if activeView === "data"}
-					<Data />
+					<Data {curr_max_data} />
 				{:else if activeView === "item-shade"}
 					<ItemShade
 						{ranked_items_by_sales}
