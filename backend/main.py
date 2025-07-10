@@ -2,7 +2,8 @@
 import requests
 import os
 import io
-from fastapi import FastAPI, Request, Path, Body
+from io import BytesIO
+from fastapi import FastAPI, Request, Path, Body, UploadFile, File
 from pydantic import BaseModel
 import pandas as pd
 from typing import List, Dict, Optional, Union
@@ -648,13 +649,15 @@ async def bestShade(req: Dict = Body(...)):
         fill_value=0
     )
 
-    frequent_itemsets = apriori(transaction_df, min_support=0.3, use_colnames=True)
+    frequent_itemsets = apriori(
+        transaction_df, min_support=0.3, use_colnames=True)
     support_desc = frequent_itemsets.sort_values(by='support', ascending=False)
     greater_support = support_desc[support_desc['support'] > 0.5]
 
-    greater_support['len'] = greater_support['itemsets'].apply(lambda x: len(x))
+    greater_support['len'] = greater_support['itemsets'].apply(
+        lambda x: len(x))
     pair_great_sup = greater_support[(greater_support['len'] == 2)].copy()
-    
+
     # Convert itemsets into two separate columns
     pair_great_sup[['shade1', 'shade2']] = pair_great_sup['itemsets'].apply(
         lambda x: pd.Series(list(x))
@@ -663,11 +666,13 @@ async def bestShade(req: Dict = Body(...)):
     # Return only the columns needed
     return pair_great_sup[['shade1', 'shade2', 'support']].to_dict(orient='records')
 
+
 @app.post('/predict')
 async def predict(req: Dict = Body(...)):
     df = pd.DataFrame(req["data"])
-    
-    df = df[['Payment Method', 'Lineitem sku', 'Lineitem price', 'Shipping Zip', 'Shipping City', 'Shipping Province']]
+
+    df = df[['Payment Method', 'Lineitem sku', 'Lineitem price',
+             'Shipping Zip', 'Shipping City', 'Shipping Province']]
 
     # --- Data cleaning ---
     df['Payment Method'] = df['Payment Method'].fillna('Other')
@@ -687,12 +692,12 @@ async def predict(req: Dict = Body(...)):
 
     # --- Load label and ratio maps from Supabase ---
     urls = {
-        'pmethod' :  'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pmethod_label_mapping.json',
-        'state'   : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//state_label_mapping.json',
-        'sku'     : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//sku_cancel_ratios.json',
-        'city'    : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//city_cancel_ratios.json',
-        'pincode' : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pincode_cancel_ratios.json',
-        'price'   : 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//price_cancel_ratios.json'
+        'pmethod':  'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pmethod_label_mapping.json',
+        'state': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//state_label_mapping.json',
+        'sku': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//sku_cancel_ratios.json',
+        'city': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//city_cancel_ratios.json',
+        'pincode': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pincode_cancel_ratios.json',
+        'price': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//price_cancel_ratios.json'
     }
 
     def fetch_map(url, key_field=None, value_field=None):
@@ -706,20 +711,20 @@ async def predict(req: Dict = Body(...)):
         data = resp.json()
         # print(data)
         return {item[key_field]: item[value_field] for item in data}
-    
+
     pmethod_map = fetch_map(urls["pmethod"])
-    state_map   = fetch_map(urls["state"])
-    sku_map     = fetch_map_dict(urls["sku"], "product_sku", "scr")
-    city_map    = fetch_map_dict(urls["city"], "city", "ccr")
+    state_map = fetch_map(urls["state"])
+    sku_map = fetch_map_dict(urls["sku"], "product_sku", "scr")
+    city_map = fetch_map_dict(urls["city"], "city", "ccr")
     pincode_map = fetch_map_dict(urls["pincode"], "pincode", "pcr")
-    price_map   = fetch_map_dict(urls["price"], "product_price", "prcr")
-    
+    price_map = fetch_map_dict(urls["price"], "product_price", "prcr")
+
     # --- Transform df using maps ---
     mean_pcr = np.mean(list(pincode_map.values()))
     mean_scr = np.mean(list(sku_map.values()))
     mean_ccr = np.mean(list(city_map.values()))
     mean_prcr = np.mean(list(price_map.values()))
-    
+
     # df['payment_method'] = df['Payment Method'].map(pmethod_map).fillna(-1)
     # df['state'] = df['Shipping Province'].map(state_map).fillna(-1)
     # df['scr'] = df['Lineitem sku'].map(sku_map).fillna(mean_scr)
@@ -733,7 +738,7 @@ async def predict(req: Dict = Body(...)):
     df['ccr'] = df['Shipping City'].map(city_map).fillna(0.0)
     df['pcr'] = df['Shipping Zip'].map(pincode_map).fillna(0.0)
     df['prcr'] = df['Lineitem price'].map(price_map).fillna(0.0)
-    
+
     # Final numeric DataFrame
     scaler = joblib.load("model/scaler.joblib")
     features_df = df[['payment_method', 'scr', 'ccr', 'pcr', 'prcr', 'state']]
@@ -744,3 +749,208 @@ async def predict(req: Dict = Body(...)):
     proba = model.predict(features_scaled)[0][0]
 
     return {"risk_score": float(proba)}
+
+
+@app.post('/input/clean/full')
+async def clean(file: UploadFile = File(...)):
+
+    contents = await file.read()
+    df = pd.read_excel(BytesIO(contents), header=2)
+
+    df = df[['BILL DATE', 'PARTY NAME', 'SHADE NAME', 'SUB CATEGORY',
+             'GENDER', 'ADDITIONAL ITEM NAME', 'NET QTY', 'M.R.P.', 'PACK / SIZE']]
+    df.rename(columns={'BILL DATE': 'purDate', 'PARTY NAME': 'party', 'SHADE NAME': 'shade', 'SUB CATEGORY': 'item',
+              'GENDER': 'gender', 'ADDITIONAL ITEM NAME': 'sku', 'NET QTY': 'sales', 'M.R.P.': 'mrp', 'PACK / SIZE': 'size'}, inplace=True)
+    df['gender'] = df['gender'].replace(
+        {'MEN': 'MENS', 'Mens': 'MENS', 'Women': 'WOMENS', 'Womens': 'WOMENS', 'WOMEN': 'WOMENS', 'Unisex': 'UNISEX'})
+    df.dropna(inplace=True)
+    df['purDate'] = pd.to_datetime(df['purDate'], format='%d/%m/%Y')
+
+    discard_items = ['750X550X335 5PLY CARTON', '320X130X120MM INNER BOX',
+                     '100X60MM TAG', 'FOOTWEAR SOLE EVA', 'ASSORTED']
+    rows_to_keep = ~df['item'].isin(discard_items)
+    df = df[rows_to_keep].copy()
+
+    df[['sales', 'mrp', 'size']] = df[['sales', 'mrp', 'size']].astype('int64', errors='ignore')
+    
+    df['party'] = df['party'].replace({
+        'ADITI FOOTWEAR                -CHITTORGARH': 'ADITI FOOTWEAR',
+        'AG TRENDS                     -HYDRABAD': 'AG TRENDS',
+        'AIREN ENTERPRISES             -HISAR': 'AIREN ENTERPRISES',
+        'BAGGA SALES AGENCY            -AHEDABAD': 'BAGGA SALES AGENCY',
+        'DEVRAJ AND SONS               -KORAPUT': 'DEVRAJ AND SONS',
+        'GNM FOOTWEAR                  -DELHI': 'GNM FOOTWEAR',
+        'GURU SHOES TECH PVT. LTD      -AGRA': 'GURU SHOES TECH PVT. LTD',
+        'J.S.DISTRIBUTOR               -BANGLORE': 'J.S.DISTRIBUTORS',
+        'JAYSHREE MARKETING            -BHOPAL': 'JAYSHREE MARKETING',
+        'KIRANAKART TECHNOLOGIES PVT LTD -MUMBAI': 'KIRANAKART TECHNOLOGIES PVT LTD',
+        'KIRANAKART TECHNOLOGIES PVT LTD BR -BANGLORE': 'KIRANAKART TECHNOLOGIES PVT LTD',
+        'KIRANAKART TECHNOLOGIES PVT LTD CH -CHENNAI': 'KIRANAKART TECHNOLOGIES PVT LTD',
+        'KIRANAKART TECHNOLOGIES PVT LTD HR -GURUGRAM': 'KIRANAKART TECHNOLOGIES PVT LTD',
+        'KWALITY ENTERPRISES           -BHAWANIPATNA': 'KWALITY ENTERPRISES',
+        'M/S SHOE PARK                 -JAGDALPUR': 'M/S SHOEPARK (JAGDALPUR)',
+        'M/S STYLE SHOES               -BHUBNESHWAR': 'M/S STYLE SHOES',
+        'MAHARAJA ENTERPRISES          -RAIPUR': 'MAHARAJA ENTERPRISES',
+        'MANOHAR BOOT HOUSE            -BILASPUR': 'MANOHAR BOOT HOUSE',
+        'MK FOOTWEAR                   -HARIDWAR': 'MK FOOTWEAR',
+        'NEW STAR FOOTWEAR             -KORAPUT': 'NEW STAR FOOTWEAR ODISHA',
+        'RAMDEV SHOE TRADING COMPANY   -CHENNAI': 'RAMDEV SHOE TRADING COMPANY',
+        'BOOTS MADGAON                 -GOA': 'BOOTS',
+        'BOOTS PANJI                   -GOA': 'BOOTS',
+        'CENTRO (V-RETAIL PVT LTD - WAREHOUSE)': 'CENTRO',
+        'CENTRO - CNR-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO SAGX (V-RETAIL LTD)    -HYDRABAD': 'CENTRO',
+        'CENTRO SAGX (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- 6 MALL SS (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- ASRN (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- CP (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- FRM (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- GBS (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- HNR (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- KMPL (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- KP (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- KPT-LB (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- KRK (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO- VZM (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-CELEST (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-GSM-SS (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-HNK-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-KKD-SBR-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-KKD-SRMT (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-KRM-CEN (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-LNT-L4-SS (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-MALHAR (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-NIZAMABAD (V-RETAIL PVT LTD)': 'CENTRO',
+        'CENTRO-SCM-SS (V-RETAIL PVT LTD)': 'CENTRO',
+        'SIKKIM COMMERCIAL             -BHUBNESHWAR': 'SIKKIM COMMERCIAL',
+        'SIKKIM COMMERCIAL CORPORATION -KOLKATA': 'SIKKIM COMMERCIAL CORPORATION',
+        'SHREE KRISHNA FOOTWEAR        -BAHADURGARH': 'SHREE KRISHNA FOOTWEAR',
+        'SHREEJI FOOTWEAR              -BAHADURGARH': 'SHREEJI FOOTWEAR',
+        'MAA VAISHNAVI INTERNATIONAL   -GURUGRAM': 'MAA VAISHNAVI INTERNATIONAL',
+        'STEP IN                       -RANCHI': 'STEP IN',
+        'SURE LEATHER EXPORTS          -AGRA': 'SURE LEATHER EXPORTS',
+        'TATA UNISTORE LIMITED-KORALURU -BANGALORE': 'TATA UNISTORE LIMITED',
+        'TWAM ENTERPRISE               -THANE': 'TWAM ENTERPRISE',
+        'M/S SOFT WALK                 -BHADRAK': 'M/S SOFT WALK'
+    })
+
+    distributor_location_map = {
+        'ADITI FOOTWEAR': 'CHITTORGARH',
+        'AG TRENDS': 'HYDERABAD',
+        'AIREN ENTERPRISES': 'HISAR',
+        'BAGGA SALES AGENCY': 'AHMEDABAD',
+        'DEVRAJ AND SONS': 'KORAPUT',
+        'GNM FOOTWEAR': 'DELHI',
+        'GURU SHOES TECH PVT. LTD': 'AGRA',
+        'J.S.DISTRIBUTORS': 'BANGALORE',
+        'JAYSHREE MARKETING': 'BHOPAL',
+        'KIRANAKART TECHNOLOGIES PVT LTD': 'MULTIPLE',
+        'KWALITY ENTERPRISES': 'BHAWANIPATNA',
+        'M/S SHOEPARK (JAGDALPUR)': 'JAGDALPUR',
+        'M/S STYLE SHOES': 'BHUBANESWAR',
+        'MAHARAJA ENTERPRISES': 'RAIPUR',
+        'MANOHAR BOOT HOUSE': 'BILASPUR',
+        'MK FOOTWEAR': 'HARIDWAR',
+        'NEW STAR FOOTWEAR ODISHA': 'KORAPUT',
+        'RAMDEV SHOE TRADING COMPANY': 'CHENNAI',
+        'SIKKIM COMMERCIAL': 'BHUBANESWAR',
+        'SIKKIM COMMERCIAL CORPORATION': 'KOLKATA',
+        'SHREE KRISHNA FOOTWEAR': 'BAHADURGARH',
+        'SHREEJI FOOTWEAR': 'BAHADURGARH',
+        'MAA VAISHNAVI INTERNATIONAL': 'GURUGRAM',
+        'STEP IN': 'RANCHI',
+        'SURE LEATHER EXPORTS': 'AGRA',
+        'TATA UNISTORE LIMITED': 'BANGALORE',
+        'TWAM ENTERPRISE': 'THANE',
+        'CENTRO': 'MULTIPLE'
+    }
+
+    location_zone_map = {
+        'AGRA': 'NORTH',
+        'AHMEDABAD': 'WEST',
+        'BAHADURGARH': 'EAST',
+        'BANGALORE': 'SOUTH',
+        'BHAWANIPATNA': 'EAST',
+        'BHOPAL': 'WEST',
+        'BHUBANESWAR': 'EAST',
+        'BILASPUR': 'NORTH',
+        'CHENNAI': 'SOUTH',
+        'CHITTORGARH': 'WEST',
+        'DELHI': 'NORTH',
+        'GURUGRAM': 'NORTH',
+        'HARIDWAR': 'NORTH',
+        'HISAR': 'NORTH',
+        'HYDERABAD': 'SOUTH',
+        'JAGDALPUR': 'NORTH',
+        'KOLKATA': 'EAST',
+        'KORAPUT': 'EAST',
+        'RAIPUR': 'NORTH',
+        'RANCHI': 'EAST',
+        'THANE': 'WEST',
+    }
+
+    location_to_state = {
+        'AGRA': 'Uttar Pradesh',
+        'AHMEDABAD': 'Gujarat',
+        'BAHADURGARH': 'Haryana',
+        'BANGALORE': 'Karnataka',
+        'BHAWANIPATNA': 'Odisha',
+        'BHOPAL': 'Madhya Pradesh',
+        'BHUBANESWAR': 'Odisha',
+        'BILASPUR': 'Chhattisgarh',
+        'CHENNAI': 'Tamil Nadu',
+        'CHITTORGARH': 'Rajasthan',
+        'DELHI': 'Delhi',
+        'GURUGRAM': 'Haryana',
+        'HARIDWAR': 'Uttarakhand',
+        'HISAR': 'Haryana',
+        'HYDERABAD': 'Telangana',
+        'JAGDALPUR': 'Chhattisgarh',
+        'KOLKATA': 'West Bengal',
+        'KORAPUT': 'Odisha',
+        'MULTIPLE': 'UNKNOWN',
+        'RAIPUR': 'Chhattisgarh',
+        'RANCHI': 'Jharkhand',
+        'THANE': 'Maharashtra',
+        'UNKNOWN': 'UNKNOWN'
+    }
+
+    df['location'] = df['party'].map(distributor_location_map)
+    df['location'] = df['location'].fillna('UNKNOWN')
+
+    df['state'] = df['location'].map(location_to_state)
+
+    df['zone'] = df['location'].map(location_zone_map)
+    df['zone'] = df['zone'].fillna('UNKNOWN')
+
+    print("cleaning successful!")
+    print("full data: ", df.shape)
+
+    return df.to_dict(orient="records")
+
+
+@app.post('/input/clean/agg')
+async def clean(file: UploadFile = File(...)):
+
+    contents = await file.read()
+    df = pd.read_excel(BytesIO(contents), header=2)
+
+    df = df[['BILL DATE', 'NET QTY', 'SUB CATEGORY']]
+    df.rename(columns={'BILL DATE': 'ds', 'NET QTY': 'y',
+              'SUB CATEGORY': 'item'}, inplace=True)
+    df.dropna(inplace=True)
+    discard_items = ['750X550X335 5PLY CARTON', '320X130X120MM INNER BOX',
+                     '100X60MM TAG', 'FOOTWEAR SOLE EVA', 'ASSORTED']
+    rows_to_keep = ~df['item'].isin(discard_items)
+    df = df[rows_to_keep].copy()
+
+    df = df[['ds', 'y']]
+    df['ds'] = pd.to_datetime(df['ds'], format='%d/%m/%Y')
+    df['y'] = df['y'].astype('int64', errors='ignore')
+
+    # Aggregate df day-wise, y = sum
+    df = df.groupby('ds')['y'].sum().reset_index()
+
+    print("agg data: ", df.head(2))
+
+    return df.to_dict(orient="records")

@@ -11,7 +11,6 @@
 		total_parties,
 		chupps_items,
 		chupps_shades,
-		itemFilteredDB,
 	} = data;
 
 	import { fade } from "svelte/transition";
@@ -19,7 +18,7 @@
 	import Forecast from "./Forecast.svelte";
 	import Sidebar from "./sidebar/Sidebar.svelte";
 	import Home from "./Home.svelte";
-	import Data from "./Data.svelte";
+	import Data from "./data/Data.svelte";
 	import ItemShade from "./ItemShade.svelte";
 	import Regional from "./Regional.svelte";
 	import Risk from "./RiskScore.svelte";
