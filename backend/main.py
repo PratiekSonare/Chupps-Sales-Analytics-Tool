@@ -767,7 +767,7 @@ async def clean(file: UploadFile = File(...)):
     df['purDate'] = pd.to_datetime(df['purDate'], format='%d/%m/%Y')
 
     discard_items = ['750X550X335 5PLY CARTON', '320X130X120MM INNER BOX',
-                     '100X60MM TAG', 'FOOTWEAR SOLE EVA', 'ASSORTED']
+                     '100X60MM TAG', 'FOOTWEAR SOLE EVA', 'ASSORTED', 'RAW']
     rows_to_keep = ~df['item'].isin(discard_items)
     df = df[rows_to_keep].copy()
 
@@ -939,7 +939,7 @@ async def clean(file: UploadFile = File(...)):
     df.rename(columns={'BILL DATE': 'ds', 'NET QTY': 'y', 'SUB CATEGORY': 'item'}, inplace=True)
     df.dropna(inplace=True)
     discard_items = ['750X550X335 5PLY CARTON', '320X130X120MM INNER BOX',
-                     '100X60MM TAG', 'FOOTWEAR SOLE EVA', 'ASSORTED']
+                     '100X60MM TAG', 'FOOTWEAR SOLE EVA', 'ASSORTED', 'RAW']
     rows_to_keep = ~df['item'].isin(discard_items)
     df = df[rows_to_keep].copy()
 
