@@ -7,8 +7,65 @@
   import CalculationPopup from "./CalculationPopup.svelte";
   const formatNumber = format(",");
 
+  let tooltipHTML = `
+    <div class="p-2">
+      <div class="flex flex-col items-center gap-4 mb-4 w-full">
+        <span class="text-lg font-semibold text-white">Calculation Used:</span>
+        <img src="/equation.svg" alt="Calculation equation" class="w-full invert mx-auto" />
+      </div>
+      <div class="space-y-2">
+        <span class="text-xs font-semibold text-gray-100">Current Version Details:</span>
+        <ul class="list-disc list-inside text-xs text-yellow-500 pl-4">
+          <li>Previous year sales are considered from <strong>2024-03-01</strong> to <strong>2025-03-01</strong>.</li>
+          <li>Forecasted sales are based on your selected filter time frame.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+
+  function showTooltip(e) {
+    const tooltip = document.getElementById("tooltip");
+    tooltip.innerHTML = tooltipHTML;
+    tooltip.style.top = `${e.clientY + 10}px`;
+    tooltip.style.left = `${e.clientX - 350}px`;
+    tooltip.style.opacity = 0.85;
+  }
+
+  function hideTooltip() {
+    const tooltip = document.getElementById("tooltip");
+    tooltip.style.opacity = 0;
+  }
+
+  let tooltipHTML2 = `
+    <div class="p-2">
+      <div class="flex flex-col items-center gap-4 mb-4 w-full">
+        <span class="text-base font-semibold text-white">Based upon an association rule mining method called -- 'Apriori Method'</span>
+      </div>
+      <div class="space-y-2">
+        <ul class="list-disc list-inside text-xs text-yellow-500">
+          <li class="">If two shades are bought together more frequently on the same date, this gives them a higher score!</li>
+          <li>In short, higher score => both shades bought together more frequently</li>
+        </ul>
+      </div>
+    </div>
+  `;
+
+  function showTooltip2(e) {
+    const tooltip = document.getElementById("tooltip");
+    tooltip.innerHTML = tooltipHTML2;
+    tooltip.style.top = `${e.clientY + 10}px`;
+    tooltip.style.left = `${e.clientX - 350}px`;
+    tooltip.style.opacity = 0.85;
+  }
+
+  function hideTooltip2() {
+    const tooltip = document.getElementById("tooltip");
+    tooltip.style.opacity = 0;
+  }
+
   export let wo_centro_prophet;
   export let chupps_23_25_full;
+  export let curr_max_data;
 
   export let total_sales;
   export let total_revenue;
@@ -112,10 +169,6 @@
       title: "Monthly Avg. Sales",
       value: formatted_monthly_avg_sales,
     },
-    // {
-    //   title: "Trend",
-    //   value: forecast_trend,
-    // },
     {
       title: "Number of days forecasted",
       value: forecast.length,
@@ -259,6 +312,8 @@
     } catch (err) {
       console.error(`Failed to fetch sales data for item - ${item}:`, err);
     }
+
+    applyFilters();
   }
 
   async function shadeChosenForForecast(shade) {
@@ -738,20 +793,30 @@
     const bestShadesTable = {
       type: "table",
       header: {
-        values: ["First Shade", "Second Shade", "Support"],
+        values: ["First Shade", "Second Shade", "Score"],
         align: "center",
         line: { width: 1, color: "black" },
         fill: { color: "lightgray" },
         font: { family: "Arial", size: 12, color: "black" },
       },
       cells: {
-        values: [data.map((d) => d.shade1), data.map((d) => d.shade2), data.map((d) => d.support)],
+        values: [
+          data.map((d) => d.shade1),
+          data.map((d) => d.shade2),
+          data.map((d) => d.support),
+        ],
         align: "left",
         line: { color: "black", width: 1 },
         font: { family: "Arial", size: 11, color: ["black"] },
         height: 24,
       },
     };
+
+    (window as any).Plotly.newPlot("best-shades-table", [bestShadesTable], {
+      margin: { t: 10, b: 10, l: 20, r: 20 },
+      displayModeBar: false,
+      responsive: true,
+    });
   }
 </script>
 
@@ -818,29 +883,17 @@
         <span class="text-gray-400 text-[10px] -my-1">(All Time)</span>
         <span class="text-5xl text-black my-auto">{total_parties}</span>
       </div>
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="card-growth bxsdw shadow-xl flex flex-col p-2"
+        on:mousemove={(e) => showTooltip(e)}
+        on:mouseenter={showTooltip}
+        on:mouseleave={hideTooltip}
         class:bg-green-300={percentage_growth > 0}
         class:bg-red-300={percentage_growth < 0}
       >
         <div class="flex flex-col mt-auto gap-0 items-center">
           <span class="text-xl mt-auto">Growth</span>
-          <!-- svelte-ignore a11y_consider_explicit_label -->
-          <button on:click={() => (calculationOpen = !calculationOpen)}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              x="0px"
-              y="0px"
-              width="12"
-              height="12"
-              class="fill-current"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M 12 2 C 6.4889971 2 2 6.4889971 2 12 C 2 17.511003 6.4889971 22 12 22 C 17.511003 22 22 17.511003 22 12 C 22 6.4889971 17.511003 2 12 2 z M 12 4 C 16.430123 4 20 7.5698774 20 12 C 20 16.430123 16.430123 20 12 20 C 7.5698774 20 4 16.430123 4 12 C 4 7.5698774 7.5698774 4 12 4 z M 11 7 L 11 9 L 13 9 L 13 7 L 11 7 z M 11 11 L 11 17 L 13 17 L 13 11 L 11 11 z"
-              ></path>
-            </svg>
-          </button>
         </div>
 
         <div class="flex flex-row gap-2 items-center my-auto">
@@ -1139,21 +1192,29 @@
       {/if}
     </div>
 
+    <!-- Tooltip -->
+    <div
+      id="tooltip"
+      class="fixed z-50 bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none opacity-0 transition-opacity duration-200"
+    ></div>
+
+    <!-- Your target div -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="flex flex-col bxsdw justify-start rounded-xl items-center h-full col-start-4 row-end-3 overflow-y-auto overflow-x-hidden py-2 px-2 bg-white"
       class:row-start-1={!setOpen}
       class:row-start-2={setOpen}
+      on:mousemove={(e) => showTooltip2(e)}
+      on:mouseenter={showTooltip2}
+      on:mouseleave={hideTooltip2}
     >
-      <div class="flex w-full flex-col justify-center items-center">
+      <div class="flex w-full flex-col items-center overflow-hidden">
         <span class="">Best Shade Combinations</span>
-        <span class="text-gray-400 text-[10px] -mt-1"
-          >(in the selected timeframe)</span
-        >
+        <span class="text-gray-400 text-[10px] -mt-1">
+          (in the selected timeframe)
+        </span>
         <div id="best-shades-table" class="w-full h-full"></div>
       </div>
-      <!-- <img src="/chupps-ai.svg" alt="chupps ai logo" class="w-[30%]" /> -->
-
-      <!-- <div class="bg-gray-300 w-3/4 h-[2px] my-3 rounded-xl"></div> -->
     </div>
 
     <div
@@ -1321,6 +1382,9 @@
   }
   .card {
     @apply bg-white w-full h-full rounded-lg flex flex-col items-center justify-start  border border-gray-300 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
+  }
+  .dark-card {
+    @apply bg-gray-900 w-full h-full rounded-lg flex flex-col items-center justify-start  border border-gray-700 cursor-pointer transition transform active:scale-95 duration-100 ease-in-out;
   }
   .card-alt {
     @apply cursor-pointer transition transform active:scale-95 duration-100 ease-in-out bg-transparent w-full h-full rounded-lg flex items-center justify-center border border-gray-300;

@@ -1,73 +1,62 @@
 <script lang="ts">
-    import { GoTrueClient } from "@supabase/supabase-js";
     import { supabase } from "../lib/supabaseClient";
     import shadeHexMap from "../lib/shade_hex_map.json";
-    import { marked } from "marked";
-    import { tweened } from "svelte/motion";
     import { onMount } from "svelte";
-    import { cubicOut } from "svelte/easing";
 
-    // Create tweened stores
-    const animatedItemRank = tweened(0, { duration: 2000, easing: cubicOut });
-    const animatedShadeRank = tweened(0, { duration: 2000, easing: cubicOut });
-
-    $: animatedItemRank.set(item_rank);
-    $: animatedShadeRank.set(shade_rank);
-
-    // Update values when component mounts
-    onMount(() => {
-        animatedItemRank.set(item_rank);
-        animatedShadeRank.set(shade_rank);
-    });
 
     export let chupps_23_25_full;
     export let ranked_items_by_sales;
     export let ranked_shades_by_sales;
 
     let items = [];
+    let states = [];
     let infoOpen = false;
-    let selectedItem = "APEX";
-    let selectedShade = "BLACK";
+    let selectedItem = "FLOW";
+    // let selectedItem = "";
+    let selectedShade = "BLACK BLACK";
+    // let selectedShade = "";
+    let selectedState = "";
     let shades = [];
     let sku = "";
     let filteredData = [];
-    let aggFilteredData = [];
     let images = [];
     let loading = 0;
-    let yearDiff = 0;
     let shadeItemSelected = false;
-    let thinking = false;
-
-    // let llmResponse = "Loading...";
-    let llmResponse = `Okay, let's break down these sales figures for our open footwear in India. Here’s what I'm seeing, thinking from a product and marketing perspective: **1. Performance: Winners & Laggards** * **Clear Winners:** Navy Blue and Black are the strongest performers, consistently showing the highest sales volume. Navy Blue in particular has strong peaks, suggesting a real pull with our customers. Black has a more steady demand, a solid base. * **Solid Performers:** Grey is doing decently well, with fluctuations, but a consistently positive volume. Brown also has decent, though lower, performance. * **Underperformers:** Grey Brown, Black Brown, and Navy Grey significantly lag behind in sales. Navy Grey is barely registering on the chart – this shade is a considerable concern and we need to understand why. **2. Understanding the Peaks & Dips - What's Happening in India?** * **Festival/Wedding Season (Oct-Dec):** The spike we see in Navy Blue, Black and Grey around October through December strongly suggests a link to festival and wedding seasons. People are buying new footwear for celebrations! This is *huge* for our marketing plans. * **New Year & Heat (Jan-Mar):** The dip in some colors after the New Year likely reflects settling back into routine after spending. The gradual uptick as we move towards March could be anticipating spring festivals or warmer weather. We should look at regional heat maps – perhaps sales accelerate sooner in warmer parts of India. * **Regional Events:** It’s difficult to pinpoint without more granular data, but smaller peaks in certain shades could be tied to regional festivals or events happening at those times. * **Potential Discount Timing:** The dips in some shades after a peak may indicate promotion end or discounts expiring. **3. Shades That Work Well Together - Bundling Opportunities** * **Navy Blue & Black:** These two show remarkably similar behavior. They peak and dip around the same times. *Definitely* explore bundling these – "Classic Comfort" or "Everyday Essentials" package. Promote them as complementing each other (one for celebrations, one for daily wear). * **Grey & Brown:** These shades have some correlation. They are not as strong as Navy and Black but could work together in a "Neutral Style" offering. * **Avoid Pairing Navy Grey**: As it barely sells, I would avoid marketing opportunities with this shade for the time being. **4. Geography - Where are Sales Differing?** This is where we *need* to dig deeper with our data. Here’s how geography likely influences sales: * **Metro Cities (Delhi, Mumbai, Bangalore, Kolkata):** We can expect higher volume across *all* shades in these areas. Trends will likely be faster, following newer fashion trends. Focus premium marketing efforts here. * **Tier 2/3 Cities:** Classic colors like Black and Navy will likely be far more popular than trendier shades. Marketing should focus on durability, value, and comfort. * **Humid Zones (Coastal Areas):** We need to see if specific shades perform better in humid climates – perhaps lighter, breathable-looking shades (though we don't have those here) are preferred. We should also determine whether the material is suitable for the climate. * **Dry Zones (Rajasthan, Gujarat):** Here, colours can be driven by local traditions, colours used for weddings and other cultural events. **5. Marketing & Product Strategies for India** * **Festival Focus:** *Aggressively* market Navy Blue, Black and Grey in the lead-up to major festivals (Diwali, Durga Puja, weddings, Holi). Run festival-themed campaigns. Pre-season discounts can work wonders. * **Regional Customization:** Tailor marketing messages and even product offerings to specific regions. What works in Delhi won’t necessarily work in Chennai. Explore regional color preferences. * **Bundling & Promotions:** Immediately implement the Navy Blue/Black and Grey/Brown bundle suggestions. Run promotions around these. * **Re-evaluate Underperformers:** We need to seriously question Grey Brown, Black Brown, and *especially* Navy Grey. * **Market Research:** Why aren’t they selling? Is it color perception? Do customers find them unattractive? * **Narrow Focus:** If they do have a small niche in specific areas, focus limited marketing there. * **Discontinue:** Be prepared to discontinue if they remain consistently poor performers. * **Colour Expansion**: Add more colours to the portfolio to take advantage of emerging trends. * **Material Science**: Ensure the footwear material is suitable for all types of climates in the country. * **Mobile-First Marketing:** India is a mobile-first market. Ensure all marketing is optimized for mobile devices. * **Influencer Marketing:** Partner with regional influencers to promote our footwear. To move forward, I'd recommend we pull sales data sliced by geography, demographics, and if possible, the source of the sale (online vs. retail store). This will give us a far more nuanced understanding of what's driving these trends and refine these strategies further.`;
-    let marked_llmResponse = "";
     let salesOff = false;
 
     let primaryColor = "#fff";
     let secondaryColor = "#000";
 
-    let historical_total_sales = 2518;
-    let historical_yearly_average = 0;
     let numUniqueParties = 0;
-    let item_rank = 0;
-    let shade_rank = 0;
 
     // Update the colors when selectedShade changes
     $: if (selectedShade && shadeHexMap[selectedShade]) {
         primaryColor = shadeHexMap[selectedShade].primary;
         secondaryColor = shadeHexMap[selectedShade].secondary;
-        shade_rank = calculateShadeRank(selectedShade);
     }
 
     // Load distinct items from Supabase
     onMount(async () => {
         const { data, error } = await supabase
-            .from("chupps_23_25_full")
+            .from("prod_1")
             .select("item", { count: "exact" })
             .order("item", { ascending: true });
 
         if (!error) {
             items = [...new Set(data.map((row) => row.item))];
+        } else {
+            console.error("Error loading items:", error);
+        }
+
+        const { data: stdata, error: sterror } = await supabase
+            .from("prod_1")
+            .select("state", { count: "exact" })
+            .order("state", { ascending: true });
+
+        if (!sterror) {
+            states = [...new Set(stdata.map((row) => row.state))]; // ✅ Fixed
+        } else {
+            console.error("Error loading states:", sterror);
         }
 
         const total_data = chupps_23_25_full.map((row) => ({
@@ -76,44 +65,6 @@
             item: row.item,
             sales: row.sales,
         }));
-
-        historical_total_sales = 2518;
-
-        try {
-            const res = await fetch(
-                `http://localhost:8000/item-shade/${selectedItem}-${selectedShade}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ data: total_data }),
-                },
-            );
-            aggFilteredData = await res.json();
-            console.log("received filtered data: ", aggFilteredData);
-        } catch (error) {
-            console.error("heres the error, brother: ", error);
-        }
-
-        const trace1 = {
-            x: aggFilteredData.map((d) => d.ds),
-            y: aggFilteredData.map((d) => d.y),
-            mode: "lines",
-            name: "Forecast",
-        };
-
-        const layout = {
-            title: "Item / Shade Sales",
-            margin: { t: 60, l: 60, r: 60, b: 60 },
-            xaxis: { title: "Date" },
-            yaxis: { title: "Sales" },
-        };
-
-        (window as any).Plotly.newPlot("actual-plot", [trace1], layout, {
-            displayModeBar: false,
-            responsive: true,
-        });
-
-        plotAggSales(aggFilteredData);
 
         const tableData = {
             type: "table",
@@ -203,11 +154,6 @@
     $: if (selectedItem) {
         shadeItemSelected = true;
         loadShades(selectedItem);
-        item_rank = calculateItemRank(selectedItem);
-    }
-
-    function toggleSales() {
-        salesOff = !salesOff;
     }
 
     async function loadShades(item) {
@@ -216,7 +162,6 @@
             .select("shade")
             .eq("item", item)
             .order("shade", { ascending: true });
-        // .select('shade', { distinct: true });
 
         if (!error) {
             shades = [...new Set(data.map((row) => row.shade))];
@@ -227,34 +172,9 @@
         loadSKU(selectedItem, selectedShade);
     }
 
-    $: if (aggFilteredData.length > 0) {
-        historical_total_sales = calculateTotalSales();
-        historical_yearly_average = calculateYearlyAverage();
-    }
-
-    function calculateTotalSales() {
-        const totalsales = aggFilteredData.reduce((sum, d) => sum + d.y, 0);
-        return totalsales;
-        //already filtered by item and shade, we just need to return the sum of sales
-    }
-
-    function calculateYearlyAverage() {
-        const totalsales = calculateTotalSales();
-
-        const years = aggFilteredData.map((d) => new Date(d.ds).getFullYear());
-        const minYear = Math.min(...years);
-        const maxYear = Math.max(...years);
-
-        yearDiff = maxYear - minYear + 1;
-
-        const average = totalsales / yearDiff;
-
-        return Math.round(average);
-    }
-
     async function loadSKU(item, shade) {
         const { data, error } = await supabase
-            .from("chupps_23_25_full")
+            .from("prod_1")
             .select("sku")
             .eq("item", item)
             .eq("shade", shade)
@@ -272,17 +192,17 @@
         loadImagesFromDropbox(sku);
     }
 
-    async function filterTable(item, shade) {
-        const query = supabase.from("chupps_23_25_full").select("*");
+    async function filterTable(item, shade, state) {
+        const query = supabase.from("prod_1").select("*");
 
         if (item) query.eq("item", item);
         if (shade) query.eq("shade", shade);
+        if (state) query.eq("state", state);
 
         const { data, error } = await query;
 
         if (!error) {
             filteredData = data;
-            numUniqueParties = calculateClient(data);
             renderTable(filteredData);
 
             const salesMap = getStateSalesMap(filteredData);
@@ -293,64 +213,8 @@
         }
     }
 
-    function calculateItemRank(item) {
-        const match = ranked_items_by_sales.find((row) => row.item === item);
-        return match ? match.item_rank : null;
-    }
-
-    function calculateShadeRank(shade) {
-        const match = ranked_shades_by_sales.find((row) => row.shade === shade);
-        return match ? match.shade_rank : null;
-    }
-
-    function calculateClient(data) {
-        const uniqueParties = new Set();
-
-        data.forEach((row) => {
-            if (row.party) {
-                uniqueParties.add(row.party);
-            }
-        });
-
-        return uniqueParties.size;
-    }
-
-    async function aggfilterTable(item, shade) {
-        if (!item || !shade) return;
-
-        const total_data = chupps_23_25_full.map((row) => ({
-            purDate: row.purDate,
-            shade: row.shade,
-            item: row.item,
-            sales: row.sales,
-        }));
-
-        try {
-            const res = await fetch(
-                `http://localhost:8000/item-shade/${item}-${shade}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ data: total_data }),
-                },
-            );
-            aggFilteredData = await res.json();
-
-            plotAggSales(aggFilteredData);
-
-            console.log("received filtered data: ", aggFilteredData);
-        } catch (error) {
-            console.error("aggFilterData fetching failed", error);
-            aggFilteredData = [];
-        }
-    }
-
-    $: if (selectedItem || selectedShade) {
-        filterTable(selectedItem, selectedShade);
-    }
-
-    $: if (selectedShade && selectedItem !== "") {
-        aggfilterTable(selectedItem, selectedShade);
+    $: if (selectedItem || selectedShade || selectedState) {
+        filterTable(selectedItem, selectedShade, selectedState);
     }
 
     function renderTable(data) {
@@ -413,58 +277,6 @@
                 responsive: true,
             },
         );
-    }
-
-    function plotAggSales(data) {
-        const trace1 = {
-            x: data.map((d) => d.ds),
-            y: data.map((d) => d.y),
-            mode: "lines",
-            name: "Sales",
-        };
-
-        const layout = {
-            title: "Item / Shade Sales",
-            margin: { t: 60, l: 60, r: 60, b: 60 },
-            xaxis: { title: "Date" },
-            yaxis: { title: "Sales" },
-        };
-
-        (window as any).Plotly.newPlot("actual-plot", [trace1], layout, {
-            displayModeBar: false,
-            responsive: true,
-        });
-    }
-
-    async function getLLMResponse(item_name) {
-        const total_data = chupps_23_25_full.map((row) => ({
-            purDate: row.purDate,
-            shade: row.shade,
-            item: row.item,
-            sales: row.sales,
-        }));
-
-        try {
-            thinking = true;
-            const res = await fetch(
-                `http://localhost:8000/api/imgchat/itemshade/${encodeURIComponent(item_name)}`, // pass in path!
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ data: total_data }), // only send data in body
-                },
-            );
-
-            const data = await res.json();
-            console.log("recevied llm resopnse in frontend: ", data);
-            llmResponse = data.choices[0]?.message?.content || "NULL RESPONSE";
-            marked_llmResponse = marked(llmResponse);
-        } catch (error) {
-            console.error("error in generating llm response: ", error);
-            return error;
-        } finally {
-            thinking = false;
-        }
     }
 
     //dropbox functions!
@@ -577,7 +389,7 @@
     import { select } from "d3-selection";
     import { zoom } from "d3-zoom";
     import { scaleLinear } from "d3-scale";
-    import indiaGeoJSON from "../lib/in.json"; // Make sure the path is correct
+    import indiaGeoJSON from "../lib/in.json";
 
     let svg;
     const width = 900;
@@ -853,7 +665,6 @@
     `,
         },
     ];
-
 </script>
 
 <div
@@ -910,6 +721,7 @@
         >
             <div class="grid grid-rows-[1fr_2fr] gap-5 h-full">
                 <div class="flex flex-col gap-2">
+                    
                     <!-- Dropdowns -->
                     <label
                         class="flex bg-yellow-100 p-5 rounded-xl flex-col justify-start items-center w-full"
@@ -919,8 +731,8 @@
                             class="border bg-amber-300 border-gray-400 rounded h-fit p-1 w-full"
                             bind:value={selectedItem}
                         >
-                            <option disabled selected value=""
-                                >--Select Item--</option
+                            <option selected value=""
+                                >All Items</option
                             >
                             {#each items as item}
                                 <option value={item}>{item}</option>
@@ -936,11 +748,26 @@
                             class="border bg-red-400 border-gray-400 w-full rounded h-fit p-1"
                             bind:value={selectedShade}
                         >
-                            <option disabled selected value=""
-                                >--Select Shade--</option
+                            <option selected value=""
+                                >All Shades</option
                             >
                             {#each shades as shade}
                                 <option value={shade}>{shade}</option>
+                            {/each}
+                        </select>
+                    </label>
+
+                    <label
+                        class="flex bg-green-100 p-5 rounded-xl flex-col justify-start items-center w-full"
+                    >
+                        <p class="text-4xl">State:</p>
+                        <select
+                            class="border bg-green-300 border-gray-400 rounded h-fit p-1 w-full"
+                            bind:value={selectedState}
+                        >
+                            <option selected value="">INDIA</option>
+                            {#each states as item}
+                                <option value={item}>{item}</option>
                             {/each}
                         </select>
                     </label>
@@ -1113,10 +940,6 @@
                 </button>
             </div>
         </div>
-
-        <div
-            class="col-start-11 col-span-2 row-span-4 bg-white rounded-xl bxsdw border border-gray-300"
-        ></div>
     </div>
 </div>
 

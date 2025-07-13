@@ -630,9 +630,25 @@ async def get_plot_data(item_name: str, req: Dict = Body(...)):
 
     return {"traces": result}
 
+@app.post("/api/itemshade/barplotallshades/{item_name}")
+async def get_plot_data(item_name: str, req: Dict = Body(...)):
+    df = pd.DataFrame(req["data"])
+    
+    # Filter for selected item
+    df = df[df['item'] == item_name]
+
+    # Group by shade and sum total sales
+    grouped = df.groupby('shade')['sales'].sum().reset_index()
+
+    result = {
+        "x": grouped['shade'].tolist(),
+        "y": grouped['sales'].tolist()
+    }
+
+    return {"traces": result}
+
+
 # APRIORI ALGORITHM
-
-
 @app.post("/api/bestshade")
 async def bestShade(req: Dict = Body(...)):
 
@@ -652,7 +668,7 @@ async def bestShade(req: Dict = Body(...)):
     frequent_itemsets = apriori(
         transaction_df, min_support=0.3, use_colnames=True)
     support_desc = frequent_itemsets.sort_values(by='support', ascending=False)
-    greater_support = support_desc[support_desc['support'] > 0.5]
+    greater_support = support_desc[support_desc['support'] > 0.2]
 
     greater_support['len'] = greater_support['itemsets'].apply(
         lambda x: len(x))

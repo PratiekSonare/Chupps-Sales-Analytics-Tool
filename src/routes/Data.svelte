@@ -149,6 +149,7 @@
             const result = await res.json();
             if (result.success) {
                 alert("AGG:Rows inserted successfully!");
+                location.reload();
             } else {
                 alert("AGG:Insert failed: " + result.error.message);
                 location.reload();
@@ -401,8 +402,7 @@
                                     >
                                     <span
                                         class="text-center text-sm text-red-800 underline"
-                                        >if, min date in your data &LessSlantEqual;
-                                        current max date &rArr; no need to upload data!
+                                        >latest data already uploaded!
                                     </span>
                                 {/if}
                             {:else}

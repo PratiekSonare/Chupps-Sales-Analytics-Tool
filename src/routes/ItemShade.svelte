@@ -28,13 +28,12 @@
 	let items = [];
 	// let selectedItem = "CHUPPS X MI LEGACY";
 	// let selectedShade = "BLUE";
-	let selectedItem = "AIRFLOW";
-	let selectedShade = "BLACK BROWN";
+	let selectedItem = "FLOW";
+	let selectedShade = "BLACK BLACK";
 	let shades = [];
 	let sku = "";
 	let filteredData = [];
 	let aggFilteredData = [];
-	let allShadesPlotUrl = "";
 	let images = [];
 	let loading = 0;
 	let yearDiff = 0;
@@ -226,8 +225,71 @@
 				},
 			);
 		} catch (error) {
-			console.error("aggFilterData fetching failed", error);
-			allShadesPlotUrl = "";
+			console.error("all-shades-plot failed", error);
+		}
+
+		try {
+			console.log("bar plot trying brother.");
+			const bar_res = await fetch(
+				`http://localhost:8000/api/itemshade/barplotallshades/${selectedItem}`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ data: total_data }),
+				},
+			);
+
+			const bar_result = await bar_res.json();
+
+			// Get original x and y arrays
+			const xValues = bar_result.traces.x;
+			const yValues = bar_result.traces.y;
+
+			// Combine x and y into pairs and sort descending by y
+			const sortedData = xValues
+				.map((shade, i) => ({ x: shade, y: yValues[i] }))
+				.sort((a, b) => b.y - a.y); // Descending order
+
+			// Split back into sorted x and y arrays
+			const sortedX = sortedData.map(d => d.x);
+			const sortedY = sortedData.map(d => d.y);
+
+			const bar_traces = [
+				{
+					x: sortedX,
+					y: sortedY,
+					type: "bar",
+					marker: {
+						color: sortedY,
+						colorscale: "Blues",
+						line: {
+							color: "rgba(58, 71, 80, 1.0)",
+							width: 1.5,
+						},
+					},
+					text: sortedY.map(String),
+					textposition: "outside",
+				},
+			];
+
+			(window as any).Plotly.newPlot(
+				"all-shades-bar-plot",
+				bar_traces,
+				{
+					title: `Bar Plot for All Shades - ${selectedItem}`,
+					xaxis: { title: "Shade" },
+					yaxis: { title: "Total Sales" },
+					plot_bgcolor: "white",
+					paper_bgcolor: "white",
+					margin: { t: 50, l: 40, r: 10, b: 60 },
+				},
+				{
+					displayModeBar: false,
+					responsive: true,
+				},
+			);
+		} catch (error) {
+			console.error("bar plot failed: ", error);
 		}
 	});
 
@@ -237,6 +299,7 @@
 		loadShades(selectedItem);
 		item_rank = calculateItemRank(selectedItem);
 		plotAllShades(selectedItem);
+		barPlotAllShades(selectedItem);
 	}
 
 	function toggleSales() {
@@ -531,6 +594,85 @@
 			);
 		} catch (error) {
 			console.error("Failed to fetch and plot all shades:", error);
+		}
+	}
+
+	async function barPlotAllShades(item_name) {
+		const total_data = chupps_23_25_full.map((row) => ({
+			purDate: row.purDate,
+			shade: row.shade,
+			item: row.item,
+			sales: row.sales,
+		}));
+
+		try {
+			const bar_res = await fetch(
+				`http://localhost:8000/api/itemshade/barplotallshades/${selectedItem}`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ data: total_data }),
+				},
+			);
+
+			const bar_result = await bar_res.json();
+			// Get original x and y arrays
+			const xValues = bar_result.traces.x;
+			const yValues = bar_result.traces.y;
+
+			// Combine x and y into pairs and sort descending by y
+			const sortedData = xValues
+				.map((shade, i) => ({ x: shade, y: yValues[i] }))
+				.sort((a, b) => b.y - a.y); // Descending order
+
+			// Split back into sorted x and y arrays
+			const sortedX = sortedData.map(d => d.x);
+			const sortedY = sortedData.map(d => d.y);
+
+			const bar_traces = [
+				{
+					x: sortedX,
+					y: sortedY,
+					type: "bar",
+					marker: {
+						color: sortedY,
+						colorscale: "Purples",
+						line: {
+							color: "rgba(58, 71, 80, 1.0)",
+							width: 1.5,
+						},
+					},
+					text: sortedY.map(String),
+					textposition: "outside",
+				},
+			];
+
+			await tick();
+
+			const el = document.getElementById("all-shades-bar-plot");
+			if (!el) {
+				console.error("all-shades-bar-plot element not found in DOM.");
+				return;
+			}
+
+			(window as any).Plotly.newPlot(
+				"all-shades-bar-plot",
+				bar_traces,
+				{
+					title: `Total Sales for All Shades - ${selectedItem}`,
+					xaxis: { title: "Shade" },
+					yaxis: { title: "Total Sales" },
+					plot_bgcolor: "white",
+					paper_bgcolor: "white",
+					margin: { t: 50, l: 40, r: 10, b: 60 },
+				},
+				{
+					displayModeBar: false,
+					responsive: true,
+				},
+			);
+		} catch (error) {
+			console.error("Failed to fetch and bar plot all shades:", error);
 		}
 	}
 
@@ -871,7 +1013,7 @@
 			class="col-start-2 col-span-2 row-start-0 row-span-2 flex gap-3 flex-row w-full h-full"
 		>
 			<div
-				class="bg-white rounded-xl bxsdw p-5 border overflow-hidden flex-3/4 items-center justify-center border-gray-300"
+				class="bg-white rounded-xl bxsdw p-5 border flex-3/4 items-center justify-center border-gray-300 overflow-auto"
 				class:hidden={salesOff}
 			>
 				<div class="flex flex-row justify-between">
@@ -894,7 +1036,8 @@
 								width="16"
 								height="16"
 								class="fill-current"
-								><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path
+							>
+								<path
 									d="M416 0C352.3 0 256 32 256 32l0 128c48 0 76 16 104 32s56 32 104 32c56.4 0 176-16 176-96S512 0 416 0zM128 96c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64zM288 512c96 0 224-48 224-128s-119.6-96-176-96c-48 0-76 16-104 32s-56 32-104 32l0 128s96.3 32 160 32zM0 416c0 35.3 28.7 64 64 64l32 0 0-128-32 0c-35.3 0-64 28.7-64 64z"
 								/></svg
 							>
@@ -932,6 +1075,11 @@
 				{:else}
 					<div
 						id="all-shades-plot"
+						class="w-11/12 h-11/12 self-center"
+					></div>
+
+					<div
+						id="all-shades-bar-plot"
 						class="w-11/12 h-11/12 self-center"
 					></div>
 				{/if}
@@ -1028,13 +1176,13 @@
 					<button
 						on:click={toggleSales}
 						on:click={() => getLLMResponse(selectedItem)}
-						class="w-full border border-green-200 rounded-lg transition-all duration-100 ease-in-out active:scale-95 active:bg-green-800 flex flex-row px-5 justify-center gap-5 items-center shadow hover:shadow-md hover:scale-[102%] hover:bg-green-100 hover:text-green-600"
+						class="w-full py-3 border border-green-200 rounded-lg transition-all duration-100 ease-in-out active:scale-95 active:bg-green-800 flex flex-row px-5 justify-center gap-5 items-center shadow hover:shadow-md hover:scale-[102%] hover:bg-green-100 hover:text-green-600"
 						style="--tw-shadow-color: #00c850;"
 					>
 						{#if !thinking}
 							<svg
-								width="20"
-								height="20"
+								width="25"
+								height="25"
 								xmlns="http://www.w3.org/2000/svg"
 								viewBox="0 0 640 512"
 								class="fill-current"
@@ -1043,7 +1191,7 @@
 									d="M320 0c17.7 0 32 14.3 32 32l0 64 120 0c39.8 0 72 32.2 72 72l0 272c0 39.8-32.2 72-72 72l-304 0c-39.8 0-72-32.2-72-72l0-272c0-39.8 32.2-72 72-72l120 0 0-64c0-17.7 14.3-32 32-32zM208 384c-8.8 0-16 7.2-16 16s7.2 16 16 16l32 0c8.8 0 16-7.2 16-16s-7.2-16-16-16l-32 0zm96 0c-8.8 0-16 7.2-16 16s7.2 16 16 16l32 0c8.8 0 16-7.2 16-16s-7.2-16-16-16l-32 0zm96 0c-8.8 0-16 7.2-16 16s7.2 16 16 16l32 0c8.8 0 16-7.2 16-16s-7.2-16-16-16l-32 0zM264 256a40 40 0 1 0 -80 0 40 40 0 1 0 80 0zm152 40a40 40 0 1 0 0-80 40 40 0 1 0 0 80zM48 224l16 0 0 192-16 0c-26.5 0-48-21.5-48-48l0-96c0-26.5 21.5-48 48-48zm544 0c26.5 0 48 21.5 48 48l0 96c0 26.5-21.5 48-48 48l-16 0 0-192 16 0z"
 								/>
 							</svg>
-							<span class="align-center">Run AI Analysis</span>
+							<span class="align-center text-lg">Run AI Analysis</span>
 						{:else}
 							<div
 								class="w-3 h-3 border-4 border-blue-400 border-dashed rounded-full animate-spin"
