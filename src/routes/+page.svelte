@@ -105,15 +105,12 @@
 					/>
 				{:else if localActiveView === "Regional"}
 					<Regional
-						{ranked_items_by_sales}
-						{ranked_shades_by_sales}
 						{chupps_23_25_full}
 					/>
 				{:else if localActiveView === "Forecast"}
 					<Forecast
 						{wo_centro_prophet}
 						{chupps_23_25_full}
-						{curr_max_data}
 						{total_sales}
 						{total_revenue}
 						{total_parties}

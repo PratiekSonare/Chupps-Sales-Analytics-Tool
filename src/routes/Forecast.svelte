@@ -65,7 +65,6 @@
 
   export let wo_centro_prophet;
   export let chupps_23_25_full;
-  export let curr_max_data;
 
   export let total_sales;
   export let total_revenue;

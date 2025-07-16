@@ -5,8 +5,6 @@
 
 
     export let chupps_23_25_full;
-    export let ranked_items_by_sales;
-    export let ranked_shades_by_sales;
 
     let items = [];
     let states = [];

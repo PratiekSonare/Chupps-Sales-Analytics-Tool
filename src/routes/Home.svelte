@@ -98,20 +98,22 @@
             </svg>`,
         },
     ];
-
 </script>
 
-<main class="z-100 w-screen h-screen px-10">
+<main class="z-100 w-screen h-screen ">
     <div class="flex flex-col items-center gap-0">
-        <img src="/chupps_header.svg" alt="" class="w-[30%]" />
 
-        <div class="rounded-xl h-1 w-3/4 bg-gray-900 mb-10"></div>
+        <div class="h-1 w-full bg-gray-900 mt-5"></div>
 
-        <div class="text1 grid grid-cols-5 grid-rows-2 gap-5 w-full h-full">
+        <img src="/chupps_header.svg" alt="" class="w-[30%] -my-3" />
+
+        <div class="h-1 w-full bg-gray-900 mb-5"></div>
+
+        <div class="text1 grid grid-cols-5 grid-rows-2 gap-5 w-full h-full px-10">
             {#each point as p}
                 <button
                     on:click={() => activeView.set(p.title)}
-                    class="overflow-hidden bg-gray-900 hover:bg-gradient-to-b hover:from-gray-900 hover:to-gray-600 shadow-xl rounded-xl w-full h-full flex flex-col items-center justify-center border border-gray-700 group active:scale-90 scale-100 transition transform duration-200 ease-in-out"
+                    class="overflow-hidden bg-gray-900 hover:bg-gradient-to-b hover:from-gray-900 hover:to-gray-600 shadow-xl rounded-xl w-full h-full flex flex-col items-center justify-center border border-gray-700 group active:scale-90 scale-100 transition-all transform duration-500 ease-in-out"
                 >
                     <div
                         class="flex-11/12 flex flex-col items-center justify-center mt-5 px-5 scale-105 group-hover:scale-95"
@@ -142,6 +144,7 @@
                     </div>
                 </button>
             {/each}
+
             <div
                 class="py-5 px-10 bg-gradient-to-t from-gray-300 to-white bxsdw text-white col-span-5 rounded-xl w-full h-full flex flex-col shadow-xl shadow-cyan-500 bxsdw"
             >
