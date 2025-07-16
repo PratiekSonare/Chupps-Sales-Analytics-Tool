@@ -29,7 +29,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     # Replace * with your frontend URL in prod
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["https://chupps-analytics-backend.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
