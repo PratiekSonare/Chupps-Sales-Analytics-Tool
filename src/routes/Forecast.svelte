@@ -7,6 +7,8 @@
   import CalculationPopup from "./CalculationPopup.svelte";
   const formatNumber = format(",");
 
+  console.log('backend link: ', import.meta.env.VITE_BACKEND_LINK);
+
   let tooltipHTML = `
     <div class="p-2">
       <div class="flex flex-col items-center gap-4 mb-4 w-full">
