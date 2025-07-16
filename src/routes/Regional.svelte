@@ -385,7 +385,6 @@
 
     import { geoMercator, geoPath } from "d3-geo";
     import { select } from "d3-selection";
-    import { zoom } from "d3-zoom";
     import { scaleLinear } from "d3-scale";
     import indiaGeoJSON from "../lib/in.json";
 

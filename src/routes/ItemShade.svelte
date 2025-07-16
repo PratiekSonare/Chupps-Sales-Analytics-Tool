@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { GoTrueClient } from "@supabase/supabase-js";
 	import { supabase } from "../lib/supabaseClient";
 	import shadeHexMap from "../lib/shade_hex_map.json";
 	import { marked } from "marked";
