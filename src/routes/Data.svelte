@@ -51,7 +51,7 @@
 
             prog2 = 0; //ghumao
 
-            const res = await fetch("http://localhost:8000/input/clean/full", {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/input/clean/full`, {
                 method: "POST",
                 body: formData,
             });
@@ -78,7 +78,7 @@
 
             prog5 = 0; //ghumao
 
-            const res = await fetch("http://localhost:8000/input/clean/agg", {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/input/clean/agg`, {
                 method: "POST",
                 body: formData,
             });

@@ -261,7 +261,7 @@
       y: row.y,
     }));
 
-    const res = await fetch("http://localhost:8000/forecast", {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/forecast`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data: agg_data }),
@@ -283,8 +283,7 @@
     }));
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/forecast/item/${encodeURIComponent(item)}`,
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/forecast/item/${encodeURIComponent(item)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -297,8 +296,7 @@
     }
 
     try {
-      const res2 = await fetch(
-        `http://localhost:8000/item/${encodeURIComponent(item)}`,
+      const res2 = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/item/${encodeURIComponent(item)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -323,8 +321,7 @@
     }));
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/forecast/shade/${encodeURIComponent(shade)}`,
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/forecast/shade/${encodeURIComponent(shade)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -337,8 +334,7 @@
     }
 
     try {
-      const res2 = await fetch(
-        `http://localhost:8000/shade/${encodeURIComponent(shade)}`,
+      const res2 = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/shade/${encodeURIComponent(shade)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -708,7 +704,7 @@
             **Input Metadata**:  ${JSON.stringify(metadata, null, 2)}
         `;
 
-      const response = await fetch("http://localhost:8000/api/chat", {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -740,7 +736,7 @@
     }));
 
     try {
-      const res = await fetch(`http://localhost:8000/api/imgchat`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/imgchat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -775,7 +771,7 @@
     }));
 
     try {
-      const res = await fetch(`http://localhost:8000/api/bestshade`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/bestshade`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data }),

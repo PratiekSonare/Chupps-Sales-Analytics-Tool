@@ -83,8 +83,7 @@
 		historical_total_sales = 2518;
 
 		try {
-			const res = await fetch(
-				`http://localhost:8000/item-shade/${selectedItem}-${selectedShade}`,
+			const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/item-shade/${selectedItem}-${selectedShade}`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -179,8 +178,7 @@
 		);
 
 		try {
-			const res = await fetch(
-				`http://localhost:8000/api/itemshade/plotallshades/${selectedItem}`,
+			const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/itemshade/plotallshades/${selectedItem}`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -229,8 +227,7 @@
 
 		try {
 			console.log("bar plot trying brother.");
-			const bar_res = await fetch(
-				`http://localhost:8000/api/itemshade/barplotallshades/${selectedItem}`,
+			const bar_res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/itemshade/barplotallshades/${selectedItem}`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -422,8 +419,7 @@
 		}));
 
 		try {
-			const res = await fetch(
-				`http://localhost:8000/item-shade/${item}-${shade}`,
+			const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/item-shade/${item}-${shade}`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -537,8 +533,7 @@
 		}));
 
 		try {
-			const res = await fetch(
-				`http://localhost:8000/api/itemshade/plotallshades/${item_name}`,
+			const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/itemshade/plotallshades/${item_name}`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -605,8 +600,7 @@
 		}));
 
 		try {
-			const bar_res = await fetch(
-				`http://localhost:8000/api/itemshade/barplotallshades/${selectedItem}`,
+			const bar_res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/itemshade/barplotallshades/${selectedItem}`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -685,8 +679,7 @@
 
 		try {
 			thinking = true;
-			const res = await fetch(
-				`http://localhost:8000/api/imgchat/itemshade/${encodeURIComponent(item_name)}`, // pass in path!
+			const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/api/imgchat/itemshade/${encodeURIComponent(item_name)}`, // pass in path!
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },

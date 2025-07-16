@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import ChuppsButton from "./ChuppsButton.svelte";
-    import { render } from "svelte/server";
 
     export let ml_train_data;
 
@@ -56,7 +55,7 @@
     async function submitForm() {
         try {
             loading = true;
-            const response = await fetch("http://localhost:8000/predict", {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/predict`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
