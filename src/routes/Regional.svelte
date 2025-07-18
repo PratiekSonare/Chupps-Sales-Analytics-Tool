@@ -3,7 +3,6 @@
     import shadeHexMap from "../lib/shade_hex_map.json";
     import { onMount } from "svelte";
 
-
     export let chupps_23_25_full;
 
     let items = [];
@@ -466,6 +465,8 @@
         });
     }
 
+    $: console.log("state data map: ", stateDataMap);
+
     let rules = [
         {
             index: "1",
@@ -718,7 +719,6 @@
         >
             <div class="grid grid-rows-[1fr_2fr] gap-5 h-full">
                 <div class="flex flex-col gap-2">
-                    
                     <!-- Dropdowns -->
                     <label
                         class="flex bg-yellow-100 p-5 rounded-xl flex-col justify-start items-center w-full"
@@ -728,9 +728,7 @@
                             class="border bg-amber-300 border-gray-400 rounded h-fit p-1 w-full"
                             bind:value={selectedItem}
                         >
-                            <option selected value=""
-                                >All Items</option
-                            >
+                            <option selected value="">All Items</option>
                             {#each items as item}
                                 <option value={item}>{item}</option>
                             {/each}
@@ -745,9 +743,7 @@
                             class="border bg-red-400 border-gray-400 w-full rounded h-fit p-1"
                             bind:value={selectedShade}
                         >
-                            <option selected value=""
-                                >All Shades</option
-                            >
+                            <option selected value="">All Shades</option>
                             {#each shades as shade}
                                 <option value={shade}>{shade}</option>
                             {/each}

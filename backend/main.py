@@ -28,8 +28,7 @@ app = FastAPI()
 # # Enable CORS for Svelte frontend
 app.add_middleware(
     CORSMiddleware,
-    # Replace * with your frontend URL in prod
-    allow_origins=["https://chupps-analytics.netlify.app"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
