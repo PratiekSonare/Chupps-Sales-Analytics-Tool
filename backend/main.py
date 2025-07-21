@@ -28,7 +28,7 @@ app = FastAPI()
 # # Enable CORS for Svelte frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +38,10 @@ app.add_middleware(
 class ForecastRequest(BaseModel):
     data: list  # List of { ds: date, y: value }
 
+@app.post("/test")
+def test():
+    print("hey, world!")
+    return {"message": "endpoint smashed!"}
 
 @app.post("/forecast")
 def forecast(req: ForecastRequest):
