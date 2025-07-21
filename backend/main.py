@@ -34,11 +34,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 class ForecastRequest(BaseModel):
     data: list  # List of { ds: date, y: value }
 
-@app.post("/test")
+@app.get("/test")
 def test():
     print("hey, world!")
     return {"message": "endpoint smashed!"}
