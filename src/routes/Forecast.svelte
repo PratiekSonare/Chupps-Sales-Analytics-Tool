@@ -1218,11 +1218,11 @@
       class="flex flex-col bxsdw justify-start rounded-xl items-center h-full col-start-4 row-start-3 row-end-6 overflow-y-auto pt-4 px-2 bg-white"
     >
       <!-- <span class="font-semibold text-2xl ai-font">AI Insights</span> -->
-      <img src="/chupps-ai.svg" alt="chupps ai logo" class="w-[30%]" />
+      <img src="/chupps-ai.svg" alt="chupps ai logo" class="w-[30%] my-2 mb-5" />
 
-      <span class="font-semibold text-xs mb-2 text-red-500"
+      <!-- <span class="font-semibold text-xs mb-2 text-red-500"
         >Usage limit: {llm_used}</span
-      >
+      > -->
       <div class="flex flex-row gap-1">
         <!-- DATA ANALYSIS BUTTON -->
         <button

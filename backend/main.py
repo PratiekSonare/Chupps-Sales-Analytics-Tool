@@ -3,7 +3,7 @@ import requests
 import os
 import io
 from io import BytesIO
-from fastapi import FastAPI, Request, Path, Body, UploadFile, File
+from fastapi import FastAPI, Request, Query, Path, Body, UploadFile, File
 from pydantic import BaseModel
 import pandas as pd
 from typing import List, Dict, Optional, Union
@@ -34,13 +34,139 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+GRAPHQL_URL=f"https://www-chupps-com.myshopify.com/admin/api/2025-07/graphql.json"
+
 class ForecastRequest(BaseModel):
     data: list  # List of { ds: date, y: value }
 
+def parseRiskScore(response_json):
+    orders = response_json["data"]["orders"]["edges"]
+
+    records = []
+
+    for order in orders:
+        node = order["node"]
+        customer_address = node.get("customer", {}).get("defaultAddress", {})
+
+        city = customer_address.get("city")
+        state = customer_address.get("province")
+        pincode = customer_address.get("zip")
+
+        # Fallback for payment method
+        transactions = node.get("transactions", [])
+        if transactions:
+            payment_method = transactions[0].get("gateway") or "Unknown"
+        else:
+            payment_method = "Unknown"
+
+        # Loop through line items (each can be a separate row)
+        for item in node.get("lineItems", {}).get("edges", []):
+            variant = item["node"].get("variant", {})
+            product_sku = variant.get("sku")
+            product_price = variant.get("price")
+
+            records.append({
+                "Payment Method": payment_method,
+                "Lineitem sku": product_sku,
+                "Lineitem price": float(product_price) if product_price else None,
+                "Shipping Zip": pincode,
+                "Shipping City": city,
+                "Shipping Province": state
+            })
+
+    df = pd.DataFrame(records)
+    return df
+
+# def addRiskCols(df):
+    
 @app.get("/test")
 def test():
     print("hey, world!")
     return {"message": "endpoint smashed!"}
+
+@app.get("/shopify/all-orders")
+def get_orders(cursor: str = Query(default=None)):
+    query = '''
+                query getOrders($cursor: String) {
+                orders(first: 60, sortKey: CREATED_AT, reverse: true, after: $cursor) {
+                    edges {
+                    node {
+                        id
+                        name
+                        createdAt
+                        customer {
+                            defaultAddress {
+                                address1
+                                address2
+                                city
+                                province
+                                zip
+                                country
+                            }
+                        }
+                        lineItems(first: 10) {
+                        edges {
+                            node {
+                            title
+                            quantity
+                            variant {
+                                id
+                                sku
+                                title
+                                price
+                            }
+                            }
+                        }
+                        }
+                        transactions(first: 5){
+                            gateway
+                            paymentDetails {
+                                ... on CardPaymentDetails {
+                                paymentMethodName
+                                }
+                                ... on ShopPayInstallmentsPaymentDetails {
+                                paymentMethodName
+                                }
+                                ... on LocalPaymentMethodsPaymentDetails {
+                                paymentMethodName
+                                }
+                                ... on PaypalWalletPaymentDetails {
+                                paymentMethodName
+                                }
+                            }
+                        }
+                    }
+                    }
+                    pageInfo {
+                    hasNextPage
+                    endCursor
+                    }
+                }
+                }
+                '''
+    variables = {"cursor": cursor} if cursor else {}
+
+    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
+    
+    response = requests.post(
+        GRAPHQL_URL,
+        json={"query": query, "variables": variables},
+        headers={
+            "X-Shopify-Access-Token": access_token,
+            "Content-Type": "application/json"
+        }
+    )
+
+    if response.status_code != 200:
+        return {"error": "Shopify API error", "details": response.text}
+
+    response = response.json()
+    
+    df = parseRiskScore(response)
+    # newDf = addRiskCols(df)
+    
+    # return newDf.to_dict(orient="records")
+    return df.to_dict(orient="records")
 
 @app.post("/forecast")
 def forecast(req: ForecastRequest):
@@ -704,7 +830,7 @@ async def predict(req: Dict = Body(...)):
     })
     df['Shipping Zip'] = df['Shipping Zip'].astype(str).str.lstrip("'")
     df['Lineitem price'] = df['Lineitem price'].replace({
-        649.0: 699.0, 849.0: 899.0, 949.0: 999.0, 1049.0: 1099.0, 749.0: 799.0
+        649.0: 699.0, 849.0: 899.0, 949.0: 999.0, 1049.0: 1099.0, 749.0: 799.0, 649: 699, 849: 899, 949: 999, 1049: 1099, 749: 799
     })
     df['Shipping City'] = df['Shipping City'].str.lower()
 
@@ -742,13 +868,6 @@ async def predict(req: Dict = Body(...)):
     mean_scr = np.mean(list(sku_map.values()))
     mean_ccr = np.mean(list(city_map.values()))
     mean_prcr = np.mean(list(price_map.values()))
-
-    # df['payment_method'] = df['Payment Method'].map(pmethod_map).fillna(-1)
-    # df['state'] = df['Shipping Province'].map(state_map).fillna(-1)
-    # df['scr'] = df['Lineitem sku'].map(sku_map).fillna(mean_scr)
-    # df['ccr'] = df['Shipping City'].map(city_map).fillna(mean_ccr)
-    # df['pcr'] = df['Shipping Zip'].map(pincode_map).fillna(mean_pcr)
-    # df['prcr'] = df['Lineitem price'].map(price_map).fillna(mean_prcr)
 
     df['payment_method'] = df['Payment Method'].map(pmethod_map).fillna(-1)
     df['state'] = df['Shipping Province'].map(state_map).fillna(-1)

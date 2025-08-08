@@ -39,6 +39,8 @@
 	import ItemShade from "./ItemShade.svelte";
 	import Regional from "./Regional.svelte";
 	import Risk from "./RiskScore.svelte";
+    import ShopifyRisk from "./ShopifyRisk.svelte";
+    import DeadStock from "./DeadStock.svelte";
 
 	let loading = false;
 
@@ -119,6 +121,10 @@
 					/>
 				{:else if localActiveView === "Risk Score"}
 					<Risk {ml_train_data} />
+				{:else if localActiveView === "Shopify Risk"}
+					<ShopifyRisk />
+				{:else if localActiveView === "Dead Stock"}
+					<DeadStock />
 				{/if}
 			{/key}
 		</section>

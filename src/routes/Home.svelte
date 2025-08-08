@@ -103,11 +103,11 @@
 <main class="z-100 w-screen h-screen ">
     <div class="flex flex-col items-center gap-0">
 
-        <div class="h-1 w-full bg-gray-900 mt-5"></div>
+        <!-- <div class="h-1 w-full bg-gray-900 mt-5"></div> -->
 
-        <img src="/chupps_header.svg" alt="" class="w-[30%] -my-3" />
+        <img src="/chupps-ai.svg" alt="" class="w-[30%] my-10" />
 
-        <div class="h-1 w-full bg-gray-900 mb-5"></div>
+        <!-- <div class="h-1 w-full bg-gray-900 mb-5"></div> -->
 
         <div class="text1 grid grid-cols-5 grid-rows-2 gap-5 w-full h-full px-10">
             {#each point as p}

@@ -35,10 +35,10 @@
 <!-- Tooltip container -->
 <div
     id="tooltip"
-    class="fixed z-50 bg-black text-white text-xs rounded px-3 py-2 pointer-events-none opacity-0 transition-opacity duration-200 max-w-xs"
+    class="fixed z-50 bg-black text-white text-xs rounded px-3 py-2 pointer-events-none opacity-0 transition-opacity duration-200 min-w-xs"
 ></div>
 
-<aside class="w-full h-full bg-gray-900 shadow-2xl py-4 px-0 border-r">
+<aside class="w-full h-full bg-gray-900 shadow-2xl py-4 px-0 border-r overflow-y-auto custom-scrollbar">
     <ul class="space-y-2">
         <li>
             <img
@@ -188,7 +188,25 @@
                     d="M313.4 32.9c26 5.2 42.9 30.5 37.7 56.5l-2.3 11.4c-5.3 26.7-15.1 52.1-28.8 75.2l144 0c26.5 0 48 21.5 48 48c0 18.5-10.5 34.6-25.9 42.6C497 275.4 504 288.9 504 304c0 23.4-16.8 42.9-38.9 47.1c4.4 7.3 6.9 15.8 6.9 24.9c0 21.3-13.9 39.4-33.1 45.6c.7 3.3 1.1 6.8 1.1 10.4c0 26.5-21.5 48-48 48l-97.5 0c-19 0-37.5-5.6-53.3-16.1l-38.5-25.7C176 420.4 160 390.4 160 358.3l0-38.3 0-48 0-24.9c0-29.2 13.3-56.7 36-75l7.4-5.9c26.5-21.2 44.6-51 51.2-84.2l2.3-11.4c5.2-26 30.5-42.9 56.5-37.7zM32 192l64 0c17.7 0 32 14.3 32 32l0 224c0 17.7-14.3 32-32 32l-64 0c-17.7 0-32-14.3-32-32L0 224c0-17.7 14.3-32 32-32z"
                 />
             </svg>
-            <li><span class="text-blue-200">Return Risk Score</span></li>
+            <li><span class="text-blue-200">Risk Score Estimation</span></li>
+        </button>
+
+        <button
+            class="flex flex-col gap-1 items-center mb-0 hover:bg-gray-700 py-5 w-full"
+            class:bg-gray-600={activeView == "Shopify Risk"}
+            on:click={() => onSelect("Shopify Risk")}
+        >
+            <img src="/shopify-black.svg" class="w-1/3 invert" alt="shopify_logo">
+            <li><span class="text-blue-200">Shopify Risk Scores</span></li>
+        </button>
+
+        <button
+            class="flex flex-col gap-1 items-center mb-0 hover:bg-gray-700 py-5 w-full"
+            class:bg-gray-600={activeView == "Dead Stock"}
+            on:click={() => onSelect("Dead Stock")}
+        >
+            <img src="/dead-stock.svg" class="w-1/2 invert" alt="shopify_logo">
+            <li><span class="text-blue-200">Dead Stock List</span></li>
         </button>
 
         <button
@@ -222,3 +240,86 @@
         ></div>
     </ul>
 </aside>
+
+<style>
+    @reference "tailwindcss";
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #111829; /* Tailwind's gray-800 */
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #4b5563; /* Tailwind's gray-600 */
+        border-radius: 4px;
+        border: 2px solid #111829; /* match track for smooth thumb border */
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #9ca3af; /* Tailwind's gray-400 */
+    }
+
+    /* Firefox support */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #4b5563 #111829;
+    }
+
+</style>
+<!-- 
+
+const tableData = {
+      type: "table",
+      header: {
+        values: ["Date", "Forecasted Sales", "Max. Sales", "Min. Sales"],
+        align: "center",
+        line: { width: 1, color: "black" },
+        fill: { color: "lightgray" },
+        font: { family: "Arial", size: 12, color: "black" },
+      },
+      cells: {
+        line: { width: 1, color: "lightgray" },
+        values: [
+          dataToPlot.map((d) => d.ds.split("T")[0]),
+          dataToPlot.map((d) => d.yhat.toFixed(2)),
+          dataToPlot.map((d) => d.yhat_upper.toFixed(2)),
+          dataToPlot.map((d) => d.yhat_lower.toFixed(2)),
+        ],
+        align: "center",
+        line: { color: "black", width: 1 },
+        font: { family: "Arial", size: 11, color: ["black"] },
+        height: 24,
+      },
+    };
+
+    (window as any).Plotly.newPlot(
+      "forecast-plot",
+      [trace1, trace2, trace3],
+      layoutForecast,
+      {
+        displayModeBar: false,
+        responsive: true,
+      },
+    );
+
+    (window as any).Plotly.newPlot("actual-plot", [daily_sales_plot], layout, {
+      displayModeBar: false,
+      responsive: true,
+    });
+
+    (window as any).Plotly.newPlot(
+      "forecast-table",
+      [tableData],
+      {
+        margin: { t: 10, b: 10, l: 20, r: 20 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+      },
+      {
+        displayModeBar: false,
+        responsive: true,
+      },
+    ); -->
