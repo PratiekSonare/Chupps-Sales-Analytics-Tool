@@ -46,6 +46,8 @@ def parseRiskScore(response_json):
 
     for order in orders:
         node = order["node"]
+        orderNum = node.get("name")
+        
         customer_address = node.get("customer", {}).get("defaultAddress", {})
 
         city = customer_address.get("city")
@@ -61,14 +63,17 @@ def parseRiskScore(response_json):
 
         # Loop through line items (each can be a separate row)
         for item in node.get("lineItems", {}).get("edges", []):
+            product_title = item["node"].get("title")
             variant = item["node"].get("variant", {})
             product_sku = variant.get("sku")
             product_price = variant.get("price")
 
             records.append({
+                "orderNum": orderNum,
                 "Payment Method": payment_method,
+                "Product Title": product_title,
                 "Lineitem sku": product_sku,
-                "Lineitem price": float(product_price) if product_price else None,
+                "Lineitem price": product_price if product_price else -1,
                 "Shipping Zip": pincode,
                 "Shipping City": city,
                 "Shipping Province": state
@@ -76,97 +81,12 @@ def parseRiskScore(response_json):
 
     df = pd.DataFrame(records)
     return df
-
-# def addRiskCols(df):
     
 @app.get("/test")
 def test():
     print("hey, world!")
     return {"message": "endpoint smashed!"}
 
-@app.get("/shopify/all-orders")
-def get_orders(cursor: str = Query(default=None)):
-    query = '''
-                query getOrders($cursor: String) {
-                orders(first: 60, sortKey: CREATED_AT, reverse: true, after: $cursor) {
-                    edges {
-                    node {
-                        id
-                        name
-                        createdAt
-                        customer {
-                            defaultAddress {
-                                address1
-                                address2
-                                city
-                                province
-                                zip
-                                country
-                            }
-                        }
-                        lineItems(first: 10) {
-                        edges {
-                            node {
-                            title
-                            quantity
-                            variant {
-                                id
-                                sku
-                                title
-                                price
-                            }
-                            }
-                        }
-                        }
-                        transactions(first: 5){
-                            gateway
-                            paymentDetails {
-                                ... on CardPaymentDetails {
-                                paymentMethodName
-                                }
-                                ... on ShopPayInstallmentsPaymentDetails {
-                                paymentMethodName
-                                }
-                                ... on LocalPaymentMethodsPaymentDetails {
-                                paymentMethodName
-                                }
-                                ... on PaypalWalletPaymentDetails {
-                                paymentMethodName
-                                }
-                            }
-                        }
-                    }
-                    }
-                    pageInfo {
-                    hasNextPage
-                    endCursor
-                    }
-                }
-                }
-                '''
-    variables = {"cursor": cursor} if cursor else {}
-
-    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
-    
-    response = requests.post(
-        GRAPHQL_URL,
-        json={"query": query, "variables": variables},
-        headers={
-            "X-Shopify-Access-Token": access_token,
-            "Content-Type": "application/json"
-        }
-    )
-
-    if response.status_code != 200:
-        return {"error": "Shopify API error", "details": response.text}
-
-    response = response.json()
-    
-    df = parseRiskScore(response)
-    # newDf = addRiskCols(df)
-    
-    # return newDf.to_dict(orient="records")
-    return df.to_dict(orient="records")
 
 @app.post("/forecast")
 def forecast(req: ForecastRequest):
@@ -208,7 +128,6 @@ def forecast(req: ForecastRequest):
 # original data, product filters
 class ForecastRequestItem(BaseModel):
     data: List[Dict]  # List of { ds: date, y: value }
-
 
 @app.post("/forecast/item/{item_name}")
 def forecast_item_wise(item_name: str = Path(...), req: ForecastRequestItem = None):
@@ -414,7 +333,6 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     model: str
     messages: List[Message]
-
 
 @app.post("/api/chat")
 async def chat_with_ai(request: ChatRequest):
@@ -810,12 +728,11 @@ async def bestShade(req: Dict = Body(...)):
     # Return only the columns needed
     return pair_great_sup[['shade1', 'shade2', 'support']].to_dict(orient='records')
 
-
 @app.post('/predict')
 async def predict(req: Dict = Body(...)):
-    df = pd.DataFrame(req["data"])
+    iniDf = pd.DataFrame(req["data"])
 
-    df = df[['Payment Method', 'Lineitem sku', 'Lineitem price',
+    df = iniDf[['Payment Method', 'Lineitem sku', 'Lineitem price',
              'Shipping Zip', 'Shipping City', 'Shipping Province']]
 
     # --- Data cleaning ---
@@ -829,8 +746,9 @@ async def predict(req: Dict = Body(...)):
         '1Razorpay - UPI, Cards, Wallets, NB + Cash on Delivery (COD)': 'PREPAID'
     })
     df['Shipping Zip'] = df['Shipping Zip'].astype(str).str.lstrip("'")
+    df['Lineitem price'] = pd.to_numeric(df['Lineitem price'], errors='coerce').fillna(0).astype(int)
     df['Lineitem price'] = df['Lineitem price'].replace({
-        649.0: 699.0, 849.0: 899.0, 949.0: 999.0, 1049.0: 1099.0, 749.0: 799.0, 649: 699, 849: 899, 949: 999, 1049: 1099, 749: 799
+        649.0: 699, 849.0: 899, 949.0: 999, 1049.0: 1099, 749.0: 799, 649: 699, 849: 899, 949: 999, 1049: 1099, 749: 799
     })
     df['Shipping City'] = df['Shipping City'].str.lower()
 
@@ -879,6 +797,9 @@ async def predict(req: Dict = Body(...)):
     # Final numeric DataFrame
     scaler = joblib.load("model/scaler.joblib")
     features_df = df[['payment_method', 'scr', 'ccr', 'pcr', 'prcr', 'state']]
+
+    print(features_df)
+    
     features_scaled = scaler.transform(features_df)
 
     # --- Model prediction ---
@@ -887,6 +808,157 @@ async def predict(req: Dict = Body(...)):
 
     return {"risk_score": float(proba)}
 
+def predict_risk_scores(data: list[Dict]) -> pd.DataFrame:
+    iniDf = pd.DataFrame(data)
+
+    df = iniDf[['Payment Method', 'Lineitem sku', 'Lineitem price',
+                'Shipping Zip', 'Shipping City', 'Shipping Province']].copy()
+
+    df['Payment Method'] = df['Payment Method'].fillna('Other')
+    df['Payment Method'] = df['Payment Method'].replace({
+        'Cash on Delivery (COD)': 'COD',
+        'shopflo': 'PREPAID',
+        'Other': 'PREPAID',
+        '1Razorpay - UPI, Cards, Wallets, NB': 'PREPAID',
+        '1Cashfree Payments(UPI,Cards,Net Banking,Wallets)': 'PREPAID',
+        'manual': 'PREPAID',
+        '1Razorpay - UPI, Cards, Wallets, NB + Cash on Delivery (COD)': 'PREPAID'
+    })
+    df['Shipping Zip'] = df['Shipping Zip'].astype(str).str.lstrip("'")
+    df['Lineitem price'] = pd.to_numeric(df['Lineitem price'], errors='coerce').fillna(0).astype(int)
+    df['Lineitem price'] = df['Lineitem price'].replace({
+        649.0: 699, 849.0: 899, 949.0: 999, 1049.0: 1099, 749.0: 799, 649: 699, 849: 899, 949: 999, 1049: 1099, 749: 799
+    })
+    df['Shipping City'] = df['Shipping City'].str.lower()
+    
+    # Load mapping dicts
+    urls = {
+        'pmethod':  'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pmethod_label_mapping.json',
+        'state': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets/state_map.json',
+        'sku': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//sku_cancel_ratios.json',
+        'city': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//city_cancel_ratios.json',
+        'pincode': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//pincode_cancel_ratios.json',
+        'price': 'https://fhhikeqiawxgesbporoj.supabase.co/storage/v1/object/public/ml-inference-assets//price_cancel_ratios.json'
+    }
+
+    def fetch_map(url):
+        return requests.get(url).json()
+
+    def fetch_map_dict(url, key_field, value_field):
+        data = requests.get(url).json()
+        return {item[key_field]: item[value_field] for item in data}
+
+    pmethod_map = fetch_map(urls["pmethod"])
+    state_map = fetch_map(urls["state"])
+    sku_map = fetch_map_dict(urls["sku"], "product_sku", "scr")
+    city_map = fetch_map_dict(urls["city"], "city", "ccr")
+    pincode_map = fetch_map_dict(urls["pincode"], "pincode", "pcr")
+    price_map = fetch_map_dict(urls["price"], "product_price", "prcr")
+
+    # mean_pcr = np.mean(list(pincode_map.values()))
+    # mean_scr = np.mean(list(sku_map.values()))
+    # mean_ccr = np.mean(list(city_map.values()))
+    # mean_prcr = np.mean(list(price_map.values()))
+
+    mean_pcr = 0.5
+    mean_scr = 0.5
+    mean_ccr = 0.5
+    mean_prcr = 0.5
+    
+    df['payment_method'] = df['Payment Method'].map(pmethod_map).fillna(-1)
+    df['state'] = df['Shipping Province'].map(state_map).fillna(-1)
+    df['scr'] = df['Lineitem sku'].map(sku_map).fillna(mean_scr)
+    df['ccr'] = df['Shipping City'].map(city_map).fillna(mean_ccr)
+    df['pcr'] = df['Shipping Zip'].map(pincode_map).fillna(mean_pcr)
+    df['prcr'] = df['Lineitem price'].map(price_map).fillna(mean_prcr)
+
+    features_df = df[['payment_method', 'scr', 'ccr', 'pcr', 'prcr', 'state']]
+
+    scaler = joblib.load("model/scaler.joblib")
+    features_scaled = scaler.transform(features_df)
+
+    model = load_model("model/risk_model_nn.keras")
+    risk_scores = model.predict(features_scaled).flatten()
+
+    # Append risk to original df
+    iniDf['risk_score'] = risk_scores
+
+    print("iniDf returned!")
+    
+    return iniDf
+
+@app.post('/predict/shopify')
+async def predictShopify(req: Dict = Body(...)):
+    data = req["data"]
+    results = predict_risk_scores(data)
+
+    records = results.to_dict(orient='records')
+    return {"results": records}
+
+@app.get("/shopify/all-orders")
+def get_orders(cursor: str = Query(default=None)):
+    query = '''
+                query getOrders($cursor: String) {
+                orders(first: 50, sortKey: CREATED_AT, reverse: true, after: $cursor) {
+                    edges {
+                    node {
+                        name
+                        customer {
+                            defaultAddress {
+                                city
+                                province
+                                zip
+                            }
+                        }
+                        lineItems(first: 1) {
+                        edges {
+                            node {
+                            title
+                            variant {
+                                sku
+                                price
+                            }
+                            }
+                        }
+                        }
+                        transactions(first: 5){
+                            gateway
+                        }
+                    }
+                    }
+                    pageInfo {
+                        hasPreviousPage
+                        hasNextPage
+                        startCursor
+                        endCursor
+                    }
+                }
+                }
+                '''
+    variables = {"cursor": cursor} if cursor else {}
+
+    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
+    
+    response = requests.post(
+        GRAPHQL_URL,
+        json={"query": query, "variables": variables},
+        headers={
+            "X-Shopify-Access-Token": access_token,
+            "Content-Type": "application/json"
+        }
+    )
+
+    if response.status_code != 200:
+        return {"error": "Shopify API error", "details": response.text}
+
+    data = response.json()
+    page_info = data["data"]["orders"]["pageInfo"]
+    
+    df = parseRiskScore(data)
+    newDf = predict_risk_scores(df.to_dict(orient="records"))
+    
+    return {"results": newDf.to_dict(orient="records"),
+            "pageInfo": page_info}
 
 @app.post('/input/clean/full')
 async def clean(file: UploadFile = File(...)):

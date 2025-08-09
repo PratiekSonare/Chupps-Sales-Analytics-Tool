@@ -1,0 +1,62 @@
+query = '''
+                query getOrders($cursor: String) {
+                orders(first: 5, sortKey: CREATED_AT, reverse: true, after: $cursor) {
+                    edges {
+                    node {
+                        id
+                        name
+                        createdAt
+                        customer {
+                            firstName
+                            lastName
+                            defaultAddress {
+                                address1
+                                address2
+                                city
+                                province
+                                zip
+                                country
+                            }
+                        }
+                        lineItems(first: 1) {
+                        edges {
+                            node {
+                            title
+                            quantity
+                            variant {
+                                id
+                                sku
+                                title
+                                price
+                            }
+                            }
+                        }
+                        }
+                        transactions(first: 5){
+                            gateway
+                            paymentDetails {
+                                ... on CardPaymentDetails {
+                                paymentMethodName
+                                }
+                                ... on ShopPayInstallmentsPaymentDetails {
+                                paymentMethodName
+                                }
+                                ... on LocalPaymentMethodsPaymentDetails {
+                                paymentMethodName
+                                }
+                                ... on PaypalWalletPaymentDetails {
+                                paymentMethodName
+                                }
+                            }
+                        }
+                    }
+                    }
+                    pageInfo {
+                        hasPreviousPage
+                        hasNextPage
+                        startCursor
+                        endCursor
+                    }
+                }
+                }
+                '''
