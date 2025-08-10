@@ -38,49 +38,6 @@ GRAPHQL_URL=f"https://www-chupps-com.myshopify.com/admin/api/2025-07/graphql.jso
 
 class ForecastRequest(BaseModel):
     data: list  # List of { ds: date, y: value }
-
-def parseRiskScore(response_json):
-    orders = response_json["data"]["orders"]["edges"]
-
-    records = []
-
-    for order in orders:
-        node = order["node"]
-        orderNum = node.get("name")
-        
-        customer_address = node.get("customer", {}).get("defaultAddress", {})
-
-        city = customer_address.get("city")
-        state = customer_address.get("province")
-        pincode = customer_address.get("zip")
-
-        # Fallback for payment method
-        transactions = node.get("transactions", [])
-        if transactions:
-            payment_method = transactions[0].get("gateway") or "Unknown"
-        else:
-            payment_method = "Unknown"
-
-        # Loop through line items (each can be a separate row)
-        for item in node.get("lineItems", {}).get("edges", []):
-            product_title = item["node"].get("title")
-            variant = item["node"].get("variant", {})
-            product_sku = variant.get("sku")
-            product_price = variant.get("price")
-
-            records.append({
-                "orderNum": orderNum,
-                "Payment Method": payment_method,
-                "Product Title": product_title,
-                "Lineitem sku": product_sku,
-                "Lineitem price": product_price if product_price else -1,
-                "Shipping Zip": pincode,
-                "Shipping City": city,
-                "Shipping Province": state
-            })
-
-    df = pd.DataFrame(records)
-    return df
     
 @app.get("/test")
 def test():
@@ -887,6 +844,50 @@ def predict_risk_scores(data: list[Dict]) -> pd.DataFrame:
     
     return iniDf
 
+def parseRiskScore(response_json):
+    orders = response_json["data"]["orders"]["edges"]
+
+    records = []
+
+    for order in orders:
+        node = order["node"]
+        orderNum = node.get("name")
+        tags = node.get("tags")
+        customer_address = node.get("customer", {}).get("defaultAddress", {})
+
+        city = customer_address.get("city")
+        state = customer_address.get("province")
+        pincode = customer_address.get("zip")
+
+        # Fallback for payment method
+        transactions = node.get("transactions", [])
+        if transactions:
+            payment_method = transactions[0].get("gateway") or "Unknown"
+        else:
+            payment_method = "Unknown"
+
+        # Loop through line items (each can be a separate row)
+        for item in node.get("lineItems", {}).get("edges", []):
+            product_title = item["node"].get("title")
+            variant = item["node"].get("variant", {})
+            product_sku = variant.get("sku")
+            product_price = variant.get("price")
+
+            records.append({
+                "orderNum": orderNum,
+                "tags": tags,
+                "Payment Method": payment_method,
+                "Product Title": product_title,
+                "Lineitem sku": product_sku,
+                "Lineitem price": product_price if product_price else -1,
+                "Shipping Zip": pincode,
+                "Shipping City": city,
+                "Shipping Province": state
+            })
+
+    df = pd.DataFrame(records)
+    return df
+
 @app.post('/predict/shopify')
 async def predictShopify(req: Dict = Body(...)):
     data = req["data"]
@@ -903,6 +904,7 @@ def get_orders(cursor: str = Query(default=None)):
                     edges {
                     node {
                         name
+                        tags
                         customer {
                             defaultAddress {
                                 city
@@ -960,6 +962,203 @@ def get_orders(cursor: str = Query(default=None)):
     return {"results": newDf.to_dict(orient="records"),
             "pageInfo": page_info}
 
+@app.get("/shopify/order-phone")
+def get_order_phone(order_num: str):
+    query = '''
+        query getOrderPhone($query: String!) {
+            orders(first: 1, query: $query) {
+                edges {
+                    node {
+                        name
+                        customer {
+                            phone
+                            defaultAddress {
+                                phone
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    '''
+    variables = {"query": f"name:{order_num}"}
+
+    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
+
+    response = requests.post(
+        GRAPHQL_URL,
+        json={"query": query, "variables": variables},
+        headers={
+            "X-Shopify-Access-Token": access_token,
+            "Content-Type": "application/json"
+        }
+    )
+
+    if response.status_code != 200:
+        return {"error": "Shopify API error", "details": response.text}
+
+    data = response.json()
+    try:
+        order_node = data['data']['orders']['edges'][0]['node']
+        return {
+            "orderNum": order_node['name'],
+            "phone": order_node['customer']['defaultAddress']['phone'] or order_node['customer']['phone']
+        }
+    except (IndexError, KeyError):
+        return {"error": "Order not found"}
+
+@app.post("/shopify/confirmed-orders")
+def get_confirmed_orders(order_nums: list[str] = Body(...), cursor: str = Query(default=None)):
+    """
+    Fetch Shopify orders matching given order numbers (order_nums).
+    """
+    query = '''
+        query getOrders($cursor: String) {
+            orders(first: 50, sortKey: CREATED_AT, reverse: true, after: $cursor) {
+                edges {
+                    node {
+                        name
+                        tags
+                        customer {
+                            defaultAddress {
+                                city
+                                province
+                                zip
+                            }
+                        }
+                        lineItems(first: 1) {
+                            edges {
+                                node {
+                                    title
+                                    variant {
+                                        sku
+                                        price
+                                    }
+                                }
+                            }
+                        }
+                        transactions(first: 5) {
+                            gateway
+                        }
+                    }
+                }
+                pageInfo {
+                    hasPreviousPage
+                    hasNextPage
+                    startCursor
+                    endCursor
+                }
+            }
+        }
+    '''
+    variables = {"cursor": cursor} if cursor else {}
+
+    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
+
+    # Step 1: Fetch all Shopify orders
+    response = requests.post(
+        GRAPHQL_URL,
+        json={"query": query, "variables": variables},
+        headers={
+            "X-Shopify-Access-Token": access_token,
+            "Content-Type": "application/json"
+        }
+    )
+
+    if response.status_code != 200:
+        return {"error": "Shopify API error", "details": response.text}
+
+    data = response.json()
+    page_info = data["data"]["orders"]["pageInfo"]
+
+    # Step 2: Parse orders into DataFrame
+    df = parseRiskScore(data)
+    newDf = predict_risk_scores(df.to_dict(orient="records"))
+
+    # Step 3: Filter by given order numbers
+    filtered_orders = [order for order in newDf.to_dict(orient="records") if order["orderNum"] in order_nums]
+
+    return {
+        "results": filtered_orders,
+        "pageInfo": page_info
+    }
+
+@app.post("/shopify/cancelled-orders")
+def get_cancelled_orders(order_nums: list[str] = Body(...), cursor: str = Query(default=None)):
+    """
+    Fetch Shopify orders matching given order numbers (order_nums).
+    """
+    query = '''
+        query getOrders($cursor: String) {
+            orders(first: 50, sortKey: CREATED_AT, reverse: true, after: $cursor) {
+                edges {
+                    node {
+                        name
+                        tags
+                        customer {
+                            defaultAddress {
+                                city
+                                province
+                                zip
+                            }
+                        }
+                        lineItems(first: 1) {
+                            edges {
+                                node {
+                                    title
+                                    variant {
+                                        sku
+                                        price
+                                    }
+                                }
+                            }
+                        }
+                        transactions(first: 5) {
+                            gateway
+                        }
+                    }
+                }
+                pageInfo {
+                    hasPreviousPage
+                    hasNextPage
+                    startCursor
+                    endCursor
+                }
+            }
+        }
+    '''
+    variables = {"cursor": cursor} if cursor else {}
+
+    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
+
+    # Step 1: Fetch all Shopify orders
+    response = requests.post(
+        GRAPHQL_URL,
+        json={"query": query, "variables": variables},
+        headers={
+            "X-Shopify-Access-Token": access_token,
+            "Content-Type": "application/json"
+        }
+    )
+
+    if response.status_code != 200:
+        return {"error": "Shopify API error", "details": response.text}
+
+    data = response.json()
+    page_info = data["data"]["orders"]["pageInfo"]
+
+    # Step 2: Parse orders into DataFrame
+    df = parseRiskScore(data)
+    newDf = predict_risk_scores(df.to_dict(orient="records"))
+
+    # Step 3: Filter by given order numbers
+    filtered_orders = [order for order in newDf.to_dict(orient="records") if order["orderNum"] in order_nums]
+
+    return {
+        "results": filtered_orders,
+        "pageInfo": page_info
+    }
+    
 @app.post('/input/clean/full')
 async def clean(file: UploadFile = File(...)):
 
