@@ -1336,7 +1336,6 @@ async def clean(file: UploadFile = File(...)):
 
     return df.to_dict(orient="records")
 
-
 @app.post('/input/clean/agg')
 async def clean(file: UploadFile = File(...)):
 
@@ -1361,3 +1360,27 @@ async def clean(file: UploadFile = File(...)):
     print("agg data: ", df.head(2))
 
     return df.to_dict(orient="records")
+
+@app.post('/mis-report/dead-stock')
+async def findDeadStock(file: UploadFile = File(...)):
+    stock = pd.read_excel(file.file)
+    
+    #step 1 - filter stock to find skus with net positive balance quantity.
+    posBalance = stock[stock['Loc. Bal Good'] > 0]
+    posBalance = posBalance[['Item Code', 'Mfg Date', 'Batch No', 'Loc. Bal Good', 'Item Description']]
+
+    #step 2 - age these products
+    now = pd.to_datetime('today')
+    posBalance['Mfg Date'] = pd.to_datetime(posBalance['Mfg Date'], format='%d-%m-%Y')
+    posBalance['Age'] = (now - posBalance['Mfg Date']).dt.days / 30.44
+
+    #step 3
+    posBalance_sorted = posBalance.sort_values(by=['Item Code', 'Age', 'Loc. Bal Good'], ascending=[True, False, False])
+    posBalance_sorted['Size'] = posBalance_sorted['Item Code'].str.extract(r'-(\d+)$').astype(int)
+    posBalance_sorted['Item Code'] = posBalance_sorted['Item Code'].str.replace(r'-\d+$', '', regex=True)
+
+    #step 4 - evaluate deadScore
+    posBalance_sorted['deadScore'] = (np.log10(posBalance_sorted['Age'] + 1)) + (np.log10(posBalance_sorted['Loc. Bal Good'] + 1))
+    posBalance_sorted['deadScore'] = posBalance_sorted['deadScore'].round(4)
+    
+    return posBalance_sorted.to_dict(orient="records")

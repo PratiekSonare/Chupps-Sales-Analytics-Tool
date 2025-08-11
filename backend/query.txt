@@ -1,130 +1,56 @@
-query = '''
-                query getOrders($cursor: String) {
-                orders(first: 5, sortKey: CREATED_AT, reverse: true, after: $cursor) {
-                    edges {
-                    node {
-                        id
-                        name
-                        createdAt
-                        customer {
-                            firstName
-                            lastName
-                            defaultAddress {
-                                address1
-                                address2
-                                city
-                                phoneNumber
-                                province
-                                zip
-                                country
-                            }
-                        }
-                        lineItems(first: 1) {
-                        edges {
-                            node {
-                            title
-                            quantity
-                            variant {
-                                id
-                                sku
-                                title
-                                price
-                            }
-                            }
-                        }
-                        }
-                        transactions(first: 5){
-                            gateway
-                            paymentDetails {
-                                ... on CardPaymentDetails {
-                                paymentMethodName
-                                }
-                                ... on ShopPayInstallmentsPaymentDetails {
-                                paymentMethodName
-                                }
-                                ... on LocalPaymentMethodsPaymentDetails {
-                                paymentMethodName
-                                }
-                                ... on PaypalWalletPaymentDetails {
-                                paymentMethodName
-                                }
-                            }
-                        }
-                    }
-                    }
-                    pageInfo {
-                        hasPreviousPage
-                        hasNextPage
-                        startCursor
-                        endCursor
-                    }
-                }
-                }
-                '''
-
-
-
-                <div
-                                class="border-b border-black text-black rounded-2xl shadow-sm flex flex-row justify-between p-5"
+{#each data_with_deadScore as order}
+                    <div
+                        class="border-b border-black text-black rounded-2xl shadow-sm flex flex-row justify-between p-5"
+                    >
+                        <span class="w-[100px]"
+                            >{order["Item Code"]}</span
+                        >
+                        <span class="w-[100px]"
+                            >{order["Mfg Date"]}</span
+                        >
+                        <span class="w-[100px]"
+                            >{order["Batch No"]}</span
+                        >
+                        <span class="w-[100px]"
+                            >{order["Loc. Bal Good"]}</span
+                        >
+                        <span class="w-[100px]"
+                            >{order["Item Description"]}</span
+                        >
+                        <span class="w-[100px]"
+                            >{order["Size"]}</span
+                        >
+                        <span class="w-[100px]"
+                            >{order["Age"]}</span
+                        >
+                        <div
+                            class="w-[100px] flex flex-col items-center scale-105"
+                        >
+                            <svg viewBox="0 0 100 50" class="w-full -mb-5">
+                                <!-- Background semicircle -->
+                                <path
+                                    d="M 10 50 A 40 40 0 0 1 90 50"
+                                    fill="transparent"
+                                    stroke="#e5e7eb"
+                                    stroke-width="10"
+                                />
+                                <!-- Progress arc -->
+                                <path
+                                    d="M 10 50 A 40 40 0 0 1 90 50"
+                                    fill="transparent"
+                                    stroke={getRiskColor(order.dead_score)}
+                                    stroke-width="10"
+                                    stroke-dasharray="126"
+                                    stroke-dashoffset={126 -
+                                        order.dead_score * 126}
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+                            <span class="text-lg text-black"
+                                >{(order.dead_score * 100).toFixed(
+                                    1,
+                                )}%</span
                             >
-                                <div class="flex flex-col gap-1">
-                                    <span class="w-[100px]"
-                                        >{order.orderNum}</span>
-                                    <button class="px-4 py-2 border">Fetch Mobile Number</button>
-                                </div>
-                                <span class="w-[100px]"
-                                    >{order["Payment Method"]}</span
-                                >
-                                <span class="w-[100px]"
-                                    >{order["Product Title"]}</span
-                                >
-                                <span class="w-[100px]"
-                                    >{order["Lineitem sku"]}</span
-                                >
-                                <span class="w-[100px]"
-                                    >{order["Lineitem price"]}</span
-                                >
-                                <span class="w-[100px]"
-                                    >{order["Shipping Zip"]}</span
-                                >
-                                <span class="w-[100px]"
-                                    >{order["Shipping City"]}</span
-                                >
-                                <span class="w-[100px]"
-                                    >{order["Shipping Province"]}</span
-                                >
-                                <div
-                                    class="w-[100px] flex flex-col items-center"
-                                >
-                                    <svg
-                                        viewBox="0 0 100 50"
-                                        class="w-full -mb-5"
-                                    >
-                                        <!-- Background semicircle -->
-                                        <path
-                                            d="M 10 50 A 40 40 0 0 1 90 50"
-                                            fill="transparent"
-                                            stroke="#e5e7eb"
-                                            stroke-width="10"
-                                        />
-                                        <!-- Progress arc -->
-                                        <path
-                                            d="M 10 50 A 40 40 0 0 1 90 50"
-                                            fill="transparent"
-                                            stroke={getRiskColor(
-                                                order.risk_score,
-                                            )}
-                                            stroke-width="10"
-                                            stroke-dasharray="126"
-                                            stroke-dashoffset={126 -
-                                                order.risk_score * 126}
-                                            stroke-linecap="round"
-                                        />
-                                    </svg>
-                                    <span class="text-lg text-black"
-                                        >{(order.risk_score * 100).toFixed(
-                                            1,
-                                        )}%</span
-                                    >
-                                </div>
-                            </div>
+                        </div>
+                    </div>
+                {/each}

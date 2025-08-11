@@ -213,6 +213,8 @@
     }
 
     function toggleSortConfirm() {
+        sortEnabled = false;
+        sortEnabledCancel = false;
         sortEnabledConfirm = !sortEnabledConfirm;
         if (sortEnabledConfirm) {
             filterTableConfirm();
@@ -220,6 +222,8 @@
     }
 
     function toggleSortCancel() {
+        sortEnabled = false;
+        sortEnabledConfirm = false;
         sortEnabledCancel = !sortEnabledCancel;
         if (sortEnabledCancel) {
             filterTableCancel();
@@ -227,8 +231,8 @@
     }
 
     function getRiskColor(score) {
-        if (score < 0.3) return "#10b981"; // green
-        if (score < 0.7) return "#facc15"; // yellow
+        if (score < 0.4) return "#10b981"; // green
+        if (score < 0.75) return "#facc15"; // yellow
         return "#ef4444"; // red
     }
 
@@ -274,15 +278,19 @@
                 <span class="text-5xl text-gray-900 mb-5"
                     >Shopify Order Risk Scores</span
                 >
-                <span class="text-md"
-                    >• View latest Shopify orders with detailed order and
-                    transaction info</span
+                <span class="text-md text2 text-gray-500"
+                    >• View latest Shopify orders <span class="text1 text-red-400">(max. 50 at once)</span> with detailed order and transaction metadata</span
                 >
-                <span class="text-md"
-                    >• Click "Calculate Risk Score" to estimate risk</span
+                <span class="text-md text2 text-gray-500"
+                    >• The Risk Meter is a measure of how likely any given transaction can be cancelled!</span>
+                <span class="text-md text2 text-gray-500"
+                    >• Click on <span class="text1 text-red-400">"Sort by Risk Score"</span> to get the transactions with highest risk</span
                 >
-                <span class="text-md"
-                    >• Sort the list by clicking "..." icon</span
+                <span class="text-md text2 text-gray-500"
+                    >• For transactions with high risk scores, get their contact phone number and call to confirm their transaction</span
+                >
+                <span class="text-md text2 text-gray-500"
+                    >• Mark transactions as <span class="text1 text-red-400">"Confirmed"</span> or <span class="text1 text-red-400">"Cancelled"</span> to keep track of the transactions </span
                 >
             </div>
         </div>
@@ -298,7 +306,8 @@
                 <div class="flex flex-row justify-between gap-5 mb-4">
                     <div class="flex flex-row gap-5">
                         <button
-                            class="px-4 py-2 bg-green-500 rounded-lg bxsdw transition duration-150 active:scale-95 scale-100 ease-in-out"
+                            disabled={sortEnabledCancel}
+                            class={`px-4 py-2 rounded-lg bxsdw transition duration-150 active:scale-95 scale-100 ease-in-out ${sortEnabledCancel? 'bg-gray-500 opacity-50' : 'bg-green-500'}`}
                             on:click={toggleSortConfirm}
                         >
                             {sortEnabledConfirm
@@ -307,7 +316,8 @@
                         </button>
 
                         <button
-                            class="px-4 py-2 bg-red-500 rounded-lg bxsdw transition duration-150 active:scale-95 scale-100 ease-in-out"
+                            disabled={sortEnabledConfirm}
+                            class={`px-4 py-2 rounded-lg bxsdw transition duration-150 active:scale-95 scale-100 ease-in-out ${sortEnabledConfirm ? 'bg-gray-500 opacity-50' : 'bg-red-500'}`}
                             on:click={toggleSortCancel}
                         >
                             {sortEnabledCancel
@@ -315,7 +325,8 @@
                                 : "Cancelled Orders"}
                         </button>
                     </div>
-                    <div class="flex flex-row gap-5">
+                    <div class="flex flex-row items-center gap-5">
+                        <span class="text-gray-500">Count: {sortEnabled ? sortedOrders.length : sortEnabledConfirm ? confirmedOrderList.length : sortEnabledCancel ? cancelledOrdersList.length : shopify_order_with_risk.length}</span>
                         <button
                             class="px-4 py-2 bg-blue-300 rounded-lg bxsdw transition duration-150 active:scale-95 scale-100 ease-in-out"
                             on:click={toggleSort}
@@ -336,16 +347,24 @@
                 </div>
 
                 <!-- HEADER ROW -->
-                <div class="text-white bg-gray-900 rounded-xl p-5 mb-5">
-                    <div class="flex flex-row justify-between w-full text-md">
+                <div class="text-white bg-gray-900 rounded-xl p-5 shadow-lg">
+                    <div class="flex flex-row justify-between items-center w-full text-md">
                         <span class="w-[150px]">Order Num</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Payment Method</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Product Title</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Lineitem SKU</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Lineitem Price</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Shipping Zip</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Shipping City</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Shipping Province</span>
+                        <div class="w-[1px] h-[15px] bg-gray-400 rounded"></div>
                         <span class="w-[100px]">Risk Scores</span>
                     </div>
                 </div>
