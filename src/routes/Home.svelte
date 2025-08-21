@@ -1,6 +1,7 @@
 <script>
     import { activeView } from "../lib/stores/view";
     import "../app.css";
+    import ChuppsButton from "./ChuppsButton.svelte";
 
     const point = [
         {
@@ -55,7 +56,7 @@
         {
             title: "Item & Shade",
             content:
-                "Explore item and shade-wise analysis of entire Chupps catalogue.",
+                "Explore item and shade-wise analysis of entire catalogue.",
             svg: `<svg
                 class="mx-auto w-8 h-8 text-white"
                 xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +75,7 @@
         {
             title: "Regional",
             content:
-                "Look at distribution of sales throughout India for any SKU of the Chupps catalogue.",
+                "Look at distribution of sales in India for any SKU of the catalogue.",
             svg: `<img
                 src="/1856790.webp"
                 alt="indiamap"
@@ -97,19 +98,41 @@
                 />
             </svg>`,
         },
+        {
+            title: "RTO Orders",
+            content:
+                "Check and verify RTO orders with the highest risk scores!",
+            svg: `<img
+                src="/shopify-black.svg"
+                alt="indiamap"
+                class="invert w-[48px] h-[48px]"
+            />`,
+        },
+        {
+            title: "Dead Stock",
+            content:
+                "Push dead stock to flash sales and clear out inventory instantly!",
+            svg: `<img
+                src="/dead-stock.svg"
+                alt="indiamap"
+                class="invert w-[48px] h-[48px]"
+            />`,
+        },
     ];
+
+    let imgSeen = false;
 </script>
 
-<main class="z-100 w-screen h-screen ">
+<main class="z-100 w-screen h-screen">
     <div class="flex flex-col items-center gap-0">
+        <button class="transition active:scale-95 scale-100 duration-200 ease-in-out w-[30%] my-20">
+            <!-- <img src="/chupps-ai.svg" alt="" class="w-[30%] my-20" /> -->
+            <img src="/chupps-ai.svg" alt="" class="w-full" />
+        </button>
 
-        <!-- <div class="h-1 w-full bg-gray-900 mt-5"></div> -->
-
-        <img src="/chupps-ai.svg" alt="" class="w-[30%] my-10" />
-
-        <!-- <div class="h-1 w-full bg-gray-900 mb-5"></div> -->
-
-        <div class="text1 grid grid-cols-5 grid-rows-2 gap-5 w-full h-full px-10">
+        <div
+            class="text1 grid grid-cols-5 grid-rows-2 gap-5 w-full h-full px-10"
+        >
             {#each point as p}
                 <button
                     on:click={() => activeView.set(p.title)}
@@ -119,7 +142,7 @@
                         class="flex-11/12 flex flex-col items-center justify-center mt-5 px-5 scale-105 group-hover:scale-95"
                     >
                         {@html p.svg}
-                        <h1 class="text-white text1 mb-5">{p.title}</h1>
+                        <h1 class="text-white text1 mb-3">{p.title}</h1>
 
                         <span class="text-gray-300 text2 text-center"
                             >{p.content}</span
@@ -146,42 +169,93 @@
             {/each}
 
             <div
-                class="py-5 px-10 bg-gradient-to-t from-gray-300 to-white bxsdw text-white col-span-5 rounded-xl w-full h-full flex flex-col shadow-xl shadow-cyan-500 bxsdw"
+                class="py-5 px-10 bg-gradient-to-t from-gray-300 to-white text-white col-span-2 rounded-xl w-full h-full flex flex-col version-sdw border border-gray-900"
             >
                 <h1 class="mb-5 text1 text-gray-900">Versions and Bugs</h1>
 
-                <div class="flex flex-col gap-2 justify-center w-full mb-0">
-                    <div class="flex items-center w-full">
-                        <span class="text-2xl text-gray-900">Version</span>
-                    </div>
+                <div
+                    class="flex flex-col gap-2 justify-center w-full mb-0 text-xs"
+                >
                     <ul class="list-disc text-gray-800">
                         <li class="text2">
                             "Forecast" complete with Deepseek V03 0324
-                            integration for meta-data analysis (16-06)
+                            integration for meta-data analysis <span
+                                class="text-red-600">(16-06)</span
+                            >
                         </li>
                         <li class="text2">
                             "Item & Shade" complete with Google Gemma 3
-                            integration for shade analysis of an item (24-06)
+                            integration for shade analysis of an item <span
+                                class="text-red-600">(24-06)</span
+                            >
                         </li>
                         <li class="text2">
                             "Regional" complete with map integration integration
-                            for qualitative analysis of item sales (24-06)
+                            for qualitative analysis of item sales <span
+                                class="text-red-600">(24-06)</span
+                            >
                         </li>
                         <li class="text2">
                             "Risk Score" complete with backend fastapi NN
-                            endpoint and train_data filtering (03-07)
+                            endpoint and train_data filtering <span
+                                class="text-red-600">(03-07)</span
+                            >
                         </li>
                         <li class="text2">
                             "Data" page ongoing, complete supabase connection
                             with backend fastapi NN endpoint and train_data
-                            filtering (03-07)
+                            filtering <span class="text-red-600">(03-07)</span>
                         </li>
                         <li class="text2">
                             Dynamic data upgradation completed! "Data" page
                             fully accessible. Only need to fix reloading of the
-                            tool to update with latest dataset! (10-07)
+                            tool to update with latest dataset! <span
+                                class="text-red-600">(10-07)</span
+                            >
                         </li>
                     </ul>
+                </div>
+            </div>
+
+            <div
+                class="relative overflow-hidden flex flex-col rounded-xl pratiek-sdw group bg-transparent pt-0 border border-gray-900"
+            >
+                {#if imgSeen}
+                    <span class="absolute bottom-14 right-4 text-black text-xl text-blue-500"
+                        >+91-9326014954</span
+                    >
+                {/if}
+                
+                <div
+                    class="flex flex-col flex-11/12 items-center justify-center group-hover:scale-110 duration-100 ease-in-out"
+                >
+                    <ChuppsButton />
+                    <span class="text-sm mt-5">Need help?</span>
+                    <span class="text-black text-xl">Facing trouble?</span>
+                </div>
+
+                <div
+                    class="flex-1/12 flex flex-row items-center justify-between px-5 py-2 bg-transparent translate-y-[150px] group-hover:translate-y-0 transition-all duration-100 ease-in-out transform text-white w-full h-full"
+                >
+                    <span class="text-black">Contact the intern!</span>
+                    <div
+                        class="flex flex-row gap-1 items-center justify-center"
+                    >
+                        <a href="https://www.linkedin.com/in/pratiek-sonare/"
+                            ><img
+                                src="/linkedin.svg"
+                                class="w-10 h-10 hover:scale-120"
+                                alt="linkedin"
+                            /></a
+                        >
+                        <button on:click={() => (imgSeen = !imgSeen)}>
+                            <img
+                                src="/call.svg"
+                                class="w-6 h-6 hover:scale-120"
+                                alt="linkedin"
+                            />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -189,4 +263,16 @@
 </main>
 
 <style>
+    @reference "tailwindcss";
+
+    .pratiek-sdw {
+        box-shadow:
+            rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
+            rgba(6, 24, 44, 0.65) 0px 4px 6px -1px,
+            rgba(255, 255, 255, 0.08) 0px 1px 0px inset;
+    }
+
+    .version-sdw {
+        box-shadow: rgba(50, 50, 93, 0.25) 0px 30px 60px -12px inset, rgba(0, 0, 0, 0.3) 0px 18px 36px -18px inset;
+    }
 </style>

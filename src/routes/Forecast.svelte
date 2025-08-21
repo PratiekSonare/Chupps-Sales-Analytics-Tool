@@ -256,6 +256,7 @@
       }
     }
   }
+  let forecastLoading = false;
 
   onMount(async () => {
     const agg_data = wo_centro_prophet.map((row) => ({
@@ -263,18 +264,25 @@
       y: row.y,
     }));
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/forecast`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: agg_data }),
-    });
+    try {
+      forecastLoading = true;
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_LINK}/forecast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: agg_data }),
+      });
 
-    forecast = await res.json();
-    og_forecast = forecast;
+      forecast = await res.json();
+      og_forecast = forecast;
 
-    filteredForecast = filterForecast(startDate, endDate);
-    plotForecast(filteredForecast);
-    bestShadeComb();
+      filteredForecast = filterForecast(startDate, endDate);
+      plotForecast(filteredForecast);
+      bestShadeComb();
+      
+    } finally {
+      forecastLoading = false;
+    }
+
   });
 
   async function itemChosenForForecast(item) {
@@ -819,6 +827,13 @@
 
 {#if calculationOpen}
   <CalculationPopup bind:calculationOpen />
+{/if}
+
+{#if forecastLoading}
+  <div class="absolute z-500 flex flex-col gap-10 justify-center items-center bg-gray-900 h-screen w-screen rounded-xl">
+    <img src="/chupps-white.svg" alt="chupps white" class="w-[8%] animate-pulse" />
+    <span class="text-gray-100 text-4xl animate-pulse">Loading...</span>
+  </div>
 {/if}
 
 <div class="w-screen h-screen relative">
