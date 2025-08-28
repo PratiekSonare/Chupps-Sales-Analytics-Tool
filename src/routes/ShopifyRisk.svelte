@@ -81,41 +81,47 @@
     }
 
     async function fetchOrders(cursor = null) {
-        let url = `${import.meta.env.VITE_BACKEND_LINK}/shopify/all-orders`;
-        if (cursor) {
-            url += `?cursor=${cursor}`;
-        }
+    let url = `${import.meta.env.VITE_BACKEND_LINK}/shopify/all-orders`;
+    if (cursor) {
+        url += `?cursor=${cursor}`;
+    }
 
+    try {
+        tableLoading = true;
+        const res = await fetch(url, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await res.json();
+
+        // ✅ update orders
+        shopify_order_with_risk = data.results || [];
+
+        // ✅ update pageInfo
+        pageInfo = data.pageInfo || {};
+
+        // ✅ set the cursor for next fetch
+        currentCursor = data.pageInfo?.endCursor || null;
+    } catch (error) {
+        console.error("error: ", error);
+    } finally {
+        tableLoading = false;
+    }
+
+    // ✅ optional sorting after fetch
+    if (sortEnabled) {
         try {
             tableLoading = true;
-            const res = await fetch(url, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-            });
-
-            const data = await res.json();
-            shopify_order_with_risk = data.results || [];
-            pageInfo = data.pageInfo || {};
-            currentCursor = cursor;
+            sortOrders();
         } catch (error) {
             console.error("error: ", error);
         } finally {
             tableLoading = false;
         }
-
-        if (sortEnabled) {
-            try {
-                tableLoading = true;
-                sortOrders();
-            } catch (error) {
-                console.error("error: ", error);
-            } finally {
-                tableLoading = false;
-            }
-        }
-
-        tableLoading = false;
     }
+}
+
 
     async function filterTableConfirm() {
         try {
@@ -338,7 +344,7 @@
 
                         <button
                             class="px-4 py-2 bg-gray-300 rounded-lg disabled:opacity-50 bxsdw transition duration-150 active:scale-95 scale-100 ease-in-out"
-                            on:click={nextPage}
+                            on:click={() => fetchOrders(currentCursor)}
                             disabled={!pageInfo.hasNextPage}
                         >
                             Next

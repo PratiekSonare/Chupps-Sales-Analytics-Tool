@@ -121,7 +121,7 @@
 					/>
 				{:else if localActiveView === "Risk Score"}
 					<Risk {ml_train_data} />
-				{:else if localActiveView === "Shopify Risk"}
+				{:else if localActiveView === "RTO Orders"}
 					<ShopifyRisk />
 				{:else if localActiveView === "Dead Stock"}
 					<DeadStock />

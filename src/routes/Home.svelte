@@ -221,7 +221,7 @@
                 class="relative overflow-hidden flex flex-col rounded-xl pratiek-sdw group bg-transparent pt-0 border border-gray-900"
             >
                 {#if imgSeen}
-                    <span class="absolute bottom-14 right-4 text-black text-xl text-blue-500"
+                    <span class="absolute bottom-14 right-4 text-xl text-blue-500"
                         >+91-9326014954</span
                     >
                 {/if}

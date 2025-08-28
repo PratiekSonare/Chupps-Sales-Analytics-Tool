@@ -193,8 +193,8 @@
 
         <button
             class="flex flex-col gap-1 items-center mb-0 hover:bg-gray-700 py-5 w-full"
-            class:bg-gray-600={activeView == "Shopify Risk"}
-            on:click={() => onSelect("Shopify Risk")}
+            class:bg-gray-600={activeView == "RTO Orders"}
+            on:click={() => onSelect("RTO Orders")}
         >
             <img src="/shopify-black.svg" class="w-1/3 invert" alt="shopify_logo">
             <li><span class="text-blue-200">Shopify Risk Scores</span></li>
